@@ -3,1229 +3,1471 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VoyaVerse - Japan Cultural Training</title>
+    <title>VoyaVerse - VR Japan Experience</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f5f5f5;
-            color: #1a1a1a;
+
+        body { font-family: 'Segoe UI', sans-serif; overflow: hidden; background: #000; }
+
+        /* ── Splash ── */
+        #splash {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 20px;
+        }
+        #splash h1 {
+            font-size: clamp(36px,6vw,72px); font-weight: 900; letter-spacing: 6px;
+            background: linear-gradient(90deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        @keyframes shimmer {
+            0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)}
+        }
+        #splash p { color: rgba(255,255,255,.7); font-size: 18px; letter-spacing: 2px; }
+        #splash .torii { font-size: 80px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px)} }
+        #enterBtn {
+            margin-top: 20px; padding: 16px 48px;
+            background: linear-gradient(135deg,#c41e3a,#8b0f26);
+            color: #fff; border: none; border-radius: 50px;
+            font-size: 20px; font-weight: 700; cursor: pointer;
+            letter-spacing: 2px; box-shadow: 0 0 30px rgba(196,30,58,.5);
+            transition: all .3s;
+        }
+        #enterBtn:hover { transform: scale(1.06); box-shadow: 0 0 50px rgba(196,30,58,.8); }
+        #splash .particles {
+            position: absolute; inset: 0; pointer-events: none;
+            background-image:
+                radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,.3) 0%, transparent 100%),
+                radial-gradient(2px 2px at 60% 70%, rgba(255,200,100,.3) 0%, transparent 100%),
+                radial-gradient(1px 1px at 80% 20%, rgba(255,100,100,.3) 0%, transparent 100%);
         }
 
-        .screen { display: none; min-height: 100vh; }
-        .screen.active { display: block; }
+        /* ── HUD ── */
+        #hud {
+            position: fixed; inset: 0; pointer-events: none; z-index: 100;
+            display: none;
+        }
+        #hud.active { display: block; }
 
-        /* Welcome Screen */
-        #welcome { 
-            background: linear-gradient(135deg, #1a1a2e 0%, #2d1b3d 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+        /* Top bar */
+        #topbar {
+            position: absolute; top: 0; left: 0; right: 0;
+            background: linear-gradient(180deg,rgba(0,0,0,.8) 0%,transparent 100%);
+            padding: 14px 24px; display: flex; align-items: center;
+            justify-content: space-between; pointer-events: all;
         }
-        #welcome.active { display: flex; }
-        
-        .welcome-card {
-            background: rgba(255,255,255,0.95);
-            padding: 40px;
-            border-radius: 20px;
-            max-width: 500px;
-            text-align: center;
+        #topbar .logo { color: #fff; font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+        #topbar .logo span { color: #ff6b6b; }
+        #progressBar {
+            display: flex; gap: 8px; align-items: center;
         }
-        
-        .logo { font-size: 48px; margin-bottom: 10px; }
-        h1 { color: #c41e3a; font-size: 32px; margin-bottom: 10px; }
-        .tagline { color: #666; margin-bottom: 30px; }
+        .prog-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: rgba(255,255,255,.3); border: 1px solid rgba(255,255,255,.5);
+            transition: all .3s;
+        }
+        .prog-dot.done { background: #6bcb77; border-color: #6bcb77; box-shadow: 0 0 8px #6bcb77; }
+        #vrBtn {
+            background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+            color: #fff; padding: 8px 18px; border-radius: 20px;
+            cursor: pointer; font-size: 13px; font-weight: 600; pointer-events: all;
+            backdrop-filter: blur(8px); transition: all .3s;
+        }
+        #vrBtn:hover { background: rgba(255,255,255,.25); }
 
-        /* Buttons */
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
+        /* Compass */
+        #compass {
+            position: absolute; top: 80px; right: 20px;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: rgba(0,0,0,.5); border: 2px solid rgba(255,255,255,.3);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; animation: compassPulse 4s ease-in-out infinite;
         }
-        .btn-primary {
-            background: #c41e3a;
-            color: white;
-        }
-        .btn-primary:hover { background: #9b1830; transform: translateY(-2px); }
-        .btn-secondary {
-            background: white;
-            color: #1a1a1a;
-            border: 2px solid #ddd;
-        }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        @keyframes compassPulse { 0%,100%{opacity:.8} 50%{opacity:1} }
 
-        /* Top Navigation */
-        .nav {
-            background: white;
-            padding: 15px 20px;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* NPC Dialog Panel */
+        #dialog {
+            position: absolute; bottom: 100px; left: 50%;
+            transform: translateX(-50%);
+            width: min(680px, 94vw);
+            background: rgba(10,8,30,.88);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,107,107,.4);
+            border-radius: 20px; padding: 20px 24px;
+            pointer-events: all;
+            display: none;
+            box-shadow: 0 0 40px rgba(196,30,58,.3);
         }
-        .nav-title { font-weight: 600; font-size: 18px; }
-        .back-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 24px;
-        }
+        #dialog.active { display: block; animation: fadeUp .4s ease; }
+        @keyframes fadeUp { from{opacity:0;transform:translateX(-50%) translateY(20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 
-        /* Container */
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 20px;
+        .npc-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .npc-avatar {
+            width: 52px; height: 52px; border-radius: 50%;
+            background: linear-gradient(135deg,#c41e3a,#8b0f26);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; border: 2px solid rgba(255,107,107,.6);
+            box-shadow: 0 0 15px rgba(196,30,58,.4);
+            flex-shrink: 0;
         }
+        .npc-info { flex: 1; }
+        .npc-name { color: #ff6b6b; font-weight: 700; font-size: 15px; }
+        .npc-role { color: rgba(255,255,255,.5); font-size: 12px; }
 
-        /* Profession Cards */
-        .prof-grid {
-            display: grid;
-            gap: 15px;
-            margin: 30px 0;
+        .dialog-jp {
+            color: #fff; font-size: 22px; font-weight: 600;
+            margin-bottom: 6px; letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(255,107,107,.3);
         }
-        .prof-card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            border: 2px solid #ddd;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .prof-card:hover { border-color: #c41e3a; transform: translateY(-2px); }
-        .prof-card.selected { border-color: #c41e3a; background: #fff5f7; }
-        .prof-icon { font-size: 32px; margin-bottom: 10px; }
-        .prof-card h3 { font-size: 18px; margin-bottom: 5px; }
-        .prof-card p { font-size: 14px; color: #666; }
-
-        /* Dashboard */
-        .progress-ring {
-            text-align: center;
-            margin: 20px 0;
-        }
-        .progress-num {
-            font-size: 48px;
-            font-weight: 700;
-            color: #c41e3a;
+        .dialog-en {
+            color: rgba(255,255,255,.6); font-size: 14px; font-style: italic;
+            margin-bottom: 18px;
         }
 
-        .module-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin: 20px 0;
+        .choices { display: flex; flex-direction: column; gap: 10px; }
+        .choice {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 12px; padding: 13px 18px;
+            color: #fff; cursor: pointer; font-size: 14px;
+            transition: all .25s; text-align: left;
         }
-        .module-card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s;
-        }
-        .module-card:hover { border-color: #c41e3a; transform: translateX(5px); }
-        .module-icon {
-            font-size: 40px;
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            background: #f0f0f0;
-        }
-        .module-info { flex: 1; }
-        .module-info h3 { font-size: 16px; margin-bottom: 5px; }
-        .module-info p { font-size: 13px; color: #666; }
+        .choice:hover { background: rgba(196,30,58,.3); border-color: rgba(196,30,58,.6); transform: translateX(4px); }
+        .choice.correct { background: rgba(34,197,94,.2); border-color: #22c55e; }
+        .choice.incorrect { background: rgba(239,68,68,.2); border-color: #ef4444; }
+        .choice.partial { background: rgba(245,158,11,.2); border-color: #f59e0b; }
+        .choice-feedback { font-size: 12px; margin-top: 4px; opacity: .8; display: none; }
+        .choice.correct .choice-feedback,
+        .choice.incorrect .choice-feedback,
+        .choice.partial .choice-feedback { display: block; }
 
-        /* Exercise List */
-        .exercise-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        /* Tip Card */
+        .tip-card {
+            background: rgba(255,200,80,.08);
+            border: 1px solid rgba(255,200,80,.3);
+            border-radius: 12px; padding: 14px; margin-top: 14px;
+            color: rgba(255,255,255,.85); font-size: 13px;
         }
-        .exercise-item {
-            background: white;
-            padding: 18px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .exercise-item:hover { border-color: #c41e3a; }
-        .exercise-item.completed { border-left: 4px solid #22c55e; }
-        .exercise-num {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #f0f0f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
-        .exercise-item.completed .exercise-num { background: #dcfce7; color: #22c55e; }
+        .tip-card h5 { color: #ffd93d; margin-bottom: 8px; font-size: 14px; }
+        .tip-card ul { list-style: none; }
+        .tip-card li { padding: 3px 0 3px 16px; position: relative; }
+        .tip-card li:before { content:"🌸"; position:absolute; left:0; font-size:11px; }
 
-        /* Conversation */
-        .context-box {
-            background: #eef2ff;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #c7d2fe;
+        /* Score panel */
+        #scorePanel {
+            display: none; text-align: center; padding-top: 10px;
         }
-        .chat {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .message {
-            max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 10px;
-        }
-        .message.npc {
-            background: white;
-            border: 1px solid #ddd;
-            align-self: flex-start;
-        }
-        .message.user {
-            background: #c41e3a;
-            color: white;
-            align-self: flex-end;
-        }
-        .message.correct { background: #22c55e; }
-        .message.incorrect { background: #ef4444; }
-        .message.partial { background: #f59e0b; }
-        .msg-label { font-size: 11px; font-weight: 600; opacity: 0.7; margin-bottom: 4px; }
-        .msg-jp { font-size: 15px; margin-bottom: 4px; }
-        .msg-en { font-size: 12px; opacity: 0.8; font-style: italic; }
+        #scorePanel.active { display: block; }
+        #scoreText { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+        #scoreMsg { color: rgba(255,255,255,.7); margin-bottom: 16px; }
 
-        .options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        /* Listening panel */
+        #listenPanel {
+            display: none;
         }
-        .option {
-            background: white;
-            padding: 15px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: left;
+        #listenPanel.active { display: block; }
+        .listen-play {
+            display: flex; align-items: center; justify-content: center;
+            gap: 14px; margin-bottom: 16px;
         }
-        .option:hover { border-color: #c41e3a; background: #fff5f7; }
-        .option.selected-correct { border-color: #22c55e; background: #dcfce7; }
-        .option.selected-incorrect { border-color: #ef4444; background: #fee2e2; }
-        .option.selected-partial { border-color: #f59e0b; background: #fef3c7; }
-        .option-text { font-size: 14px; }
-        .option-jp { font-size: 12px; color: #666; margin-top: 4px; }
-        .feedback { 
-            display: none; 
-            font-size: 12px; 
-            font-weight: 600; 
-            margin-top: 8px; 
+        .play-circle {
+            width: 52px; height: 52px; border-radius: 50%;
+            background: linear-gradient(135deg,#c41e3a,#8b0f26);
+            border: none; color: #fff; font-size: 22px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(196,30,58,.5); transition: all .3s;
         }
-        .option.selected-correct .feedback,
-        .option.selected-incorrect .feedback,
-        .option.selected-partial .feedback {
-            display: block;
+        .play-circle:hover { transform: scale(1.1); }
+        .transcript-toggle {
+            background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+            color: rgba(255,255,255,.8); padding: 8px 16px; border-radius: 20px;
+            cursor: pointer; font-size: 13px; transition: all .3s;
         }
+        .transcript-toggle:hover { background: rgba(255,255,255,.2); }
+        #transcriptBox { display: none; color: rgba(255,255,255,.7); font-size: 14px; margin-bottom: 14px; }
+        #transcriptBox.show { display: block; }
 
-        .tips-box {
-            background: #fff7ed;
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #fed7aa;
-            margin-top: 20px;
+        .q-block { margin-bottom: 12px; }
+        .q-block p { color: rgba(255,255,255,.9); font-size: 14px; margin-bottom: 8px; font-weight: 600; }
+        .q-opt {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 14px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.15);
+            cursor: pointer; color: #fff; font-size: 14px;
+            margin-bottom: 6px; transition: all .25s;
+            background: rgba(255,255,255,.05);
         }
-        .tips-box h4 { margin-bottom: 10px; }
-        .tips-box ul { list-style: none; }
-        .tips-box li { 
-            padding: 5px 0; 
-            padding-left: 20px; 
-            position: relative; 
-        }
-        .tips-box li:before { 
-            content: "•"; 
-            position: absolute; 
-            left: 0; 
-            color: #d4a843; 
-            font-weight: bold; 
-        }
+        .q-opt:hover { border-color: rgba(196,30,58,.6); background: rgba(196,30,58,.15); }
+        .q-opt.selected { border-color: #ff6b6b; background: rgba(196,30,58,.25); }
+        .q-opt.correct { border-color: #22c55e; background: rgba(34,197,94,.2); }
+        .q-opt.wrong { border-color: #ef4444; background: rgba(239,68,68,.2); }
+        .q-radio { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); flex-shrink: 0; }
+        .q-opt.selected .q-radio { background: #ff6b6b; border-color: #ff6b6b; }
 
-        /* Audio Player */
-        .audio-player {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            text-align: center;
-            margin-bottom: 20px;
+        /* Speaking panel */
+        #speakPanel { display: none; }
+        #speakPanel.active { display: block; }
+        .speak-prompt {
+            background: rgba(255,255,255,.06); border-radius: 12px;
+            padding: 14px; margin-bottom: 16px;
         }
-        .play-btn {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: #c41e3a;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 24px;
-            margin: 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .speak-prompt h4 { color: #ffd93d; margin-bottom: 6px; }
+        .speak-prompt p { color: rgba(255,255,255,.7); font-size: 14px; }
+        .mic-area { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 16px; }
+        #micBtn2 {
+            width: 72px; height: 72px; border-radius: 50%;
+            border: 3px solid #c41e3a; background: rgba(196,30,58,.15);
+            color: #ff6b6b; font-size: 28px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all .3s;
         }
-        .play-btn:hover { background: #9b1830; transform: scale(1.1); }
+        #micBtn2.recording { background: #c41e3a; color: #fff; box-shadow: 0 0 25px rgba(196,30,58,.7); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+        #micLabel2 { color: rgba(255,255,255,.6); font-size: 13px; }
+        .model-answer-box {
+            background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15);
+            border-radius: 12px; padding: 14px; display: none;
+        }
+        .model-answer-box.show { display: block; }
+        .model-jp { font-size: 18px; color: #fff; margin-bottom: 6px; }
+        .model-en { font-size: 13px; color: rgba(255,255,255,.6); font-style: italic; }
 
-        /* Questions */
-        .question {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
+        /* Action buttons */
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+        .btn-vr {
+            flex: 1; min-width: 120px; padding: 12px 16px;
+            border: none; border-radius: 12px; cursor: pointer;
+            font-size: 14px; font-weight: 700; letter-spacing: .5px;
+            transition: all .3s;
         }
-        .question h4 { margin-bottom: 12px; }
-        .q-option {
-            padding: 10px 15px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .q-option:hover { border-color: #c41e3a; background: #fff5f7; }
-        .q-option.selected { border-color: #c41e3a; background: #fff5f7; }
-        .q-option.correct { border-color: #22c55e; background: #dcfce7; }
-        .q-option.incorrect { border-color: #ef4444; background: #fee2e2; }
-        .radio {
-            width: 18px;
-            height: 18px;
-            border: 2px solid #ddd;
-            border-radius: 50%;
-            position: relative;
-        }
-        .q-option.selected .radio:after {
-            content: "";
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #c41e3a;
-            position: absolute;
-            top: 2px;
-            left: 2px;
-        }
+        .btn-red { background: linear-gradient(135deg,#c41e3a,#8b0f26); color: #fff; }
+        .btn-red:hover { box-shadow: 0 0 20px rgba(196,30,58,.6); transform: translateY(-2px); }
+        .btn-ghost { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: #fff; }
+        .btn-ghost:hover { background: rgba(255,255,255,.2); }
+        .btn-green { background: linear-gradient(135deg,#22c55e,#16803a); color: #fff; }
+        .btn-green:hover { box-shadow: 0 0 20px rgba(34,197,94,.5); transform: translateY(-2px); }
 
-        /* Speaking */
-        .mic-btn {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 3px solid #c41e3a;
-            background: white;
-            color: #c41e3a;
-            font-size: 32px;
-            cursor: pointer;
-            margin: 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* Mini map / location label */
+        #locationLabel {
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,.6); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,.2); border-radius: 20px;
+            padding: 6px 18px; color: #fff; font-size: 14px;
+            pointer-events: none; text-align: center;
         }
-        .mic-btn:hover { background: #fff5f7; }
-        .mic-btn.recording { background: #c41e3a; color: white; }
+        #locationLabel span { color: #ffd93d; }
 
-        .model-answer {
-            background: #f0f0f0;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
+        /* NPC Approach prompt */
+        #npcPrompt {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,.7); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,107,107,.4); border-radius: 30px;
+            padding: 10px 24px; color: #fff; font-size: 14px;
+            pointer-events: none; display: none; text-align: center;
         }
-        .model-jp { font-size: 16px; margin-bottom: 8px; }
-        .model-en { font-size: 14px; color: #666; }
+        #npcPrompt.active { display: block; animation: blink 1.5s ease-in-out infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.5} }
 
         /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1a1a2e;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            display: none;
-            z-index: 1000;
+        #toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,.85); color: #fff;
+            padding: 12px 28px; border-radius: 30px; font-size: 14px;
+            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.15);
+            display: none; z-index: 9998;
         }
 
-        /* Utility */
-        .text-center { text-align: center; }
-        .mt-20 { margin-top: 20px; }
-        .mb-20 { margin-bottom: 20px; }
-        .hidden { display: none; }
-
-        @media (max-width: 600px) {
-            .welcome-card { padding: 30px 20px; }
-            h1 { font-size: 24px; }
+        /* Profession screen overlay */
+        #profScreen {
+            position: fixed; inset: 0; z-index: 500;
+            background: linear-gradient(135deg,#0f0c29 0%,#302b63 100%);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; padding: 30px;
         }
+        #profScreen.active { display: flex; }
+        #profScreen h2 { color: #fff; font-size: 28px; margin-bottom: 8px; text-align: center; }
+        #profScreen p { color: rgba(255,255,255,.6); margin-bottom: 30px; text-align: center; }
+        .prof-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 500px; }
+        .prof-card2 {
+            background: rgba(255,255,255,.06); border: 2px solid rgba(255,255,255,.15);
+            border-radius: 16px; padding: 20px; cursor: pointer; text-align: center;
+            color: #fff; transition: all .3s;
+        }
+        .prof-card2:hover { border-color: #c41e3a; background: rgba(196,30,58,.15); transform: translateY(-3px); }
+        .prof-card2.selected { border-color: #c41e3a; background: rgba(196,30,58,.25); }
+        .prof-card2 .icon { font-size: 36px; margin-bottom: 8px; }
+        .prof-card2 h3 { font-size: 15px; margin-bottom: 4px; }
+        .prof-card2 p { font-size: 12px; color: rgba(255,255,255,.5); margin: 0; }
+
+        /* Module chooser */
+        #moduleScreen {
+            position: fixed; inset: 0; z-index: 400;
+            background: rgba(0,0,0,.85); backdrop-filter: blur(20px);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        #moduleScreen.active { display: flex; }
+        #moduleScreen h2 { color: #fff; font-size: 24px; margin-bottom: 20px; }
+        .module-list { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 480px; }
+        .module-item {
+            background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15);
+            border-radius: 16px; padding: 18px 22px;
+            display: flex; align-items: center; gap: 16px;
+            cursor: pointer; color: #fff; transition: all .3s;
+        }
+        .module-item:hover { border-color: #c41e3a; background: rgba(196,30,58,.2); transform: translateX(6px); }
+        .module-item .mi-icon { font-size: 36px; }
+        .module-item h3 { font-size: 16px; margin-bottom: 3px; }
+        .module-item p { font-size: 13px; color: rgba(255,255,255,.5); }
+        .module-item .mi-badge {
+            margin-left: auto; background: rgba(255,255,255,.1);
+            padding: 4px 12px; border-radius: 20px; font-size: 12px;
+        }
+        .module-item .mi-badge.done { background: rgba(34,197,94,.2); color: #6bcb77; }
+        #closeModule {
+            margin-top: 20px; background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.2); color: #fff;
+            padding: 10px 28px; border-radius: 20px; cursor: pointer;
+            font-size: 14px; transition: all .3s;
+        }
+        #closeModule:hover { background: rgba(255,255,255,.2); }
+
+        /* Exercise list overlay */
+        #exerciseScreen {
+            position: fixed; inset: 0; z-index: 450;
+            background: rgba(0,0,0,.88); backdrop-filter: blur(20px);
+            display: none; flex-direction: column;
+            align-items: center; padding: 30px 20px; overflow-y: auto;
+        }
+        #exerciseScreen.active { display: flex; }
+        #exerciseScreen h2 { color: #fff; font-size: 22px; margin-bottom: 20px; }
+        .ex-list { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 500px; }
+        .ex-item {
+            background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.15);
+            border-radius: 14px; padding: 18px 20px;
+            display: flex; align-items: center; gap: 14px;
+            cursor: pointer; color: #fff; transition: all .3s;
+        }
+        .ex-item:hover { border-color: #c41e3a; background: rgba(196,30,58,.2); }
+        .ex-item.completed { border-left: 4px solid #22c55e; }
+        .ex-num {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(255,255,255,.1);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px; flex-shrink: 0;
+        }
+        .ex-item.completed .ex-num { background: rgba(34,197,94,.2); color: #6bcb77; }
+        #backToModules {
+            margin-top: 20px; background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.2); color: #fff;
+            padding: 10px 28px; border-radius: 20px; cursor: pointer;
+            font-size: 14px; transition: all .3s;
+        }
+        #backToModules:hover { background: rgba(255,255,255,.2); }
     </style>
 </head>
 <body>
-    <!-- Welcome Screen -->
-    <div id="welcome" class="screen active">
-        <div class="welcome-card">
-            <div class="logo">🌏</div>
-            <h1>VoyaVerse</h1>
-            <p class="tagline">Cultural Readiness Platform</p>
-            <h2 style="margin: 20px 0;">Prepare for Japan</h2>
-            <p style="margin-bottom: 30px; color: #666;">
-                Master Japanese language and culture through interactive scenarios, 
-                listening exercises, and speaking practice.
-            </p>
-            <button class="btn btn-primary" onclick="goto('profession')">Get Started</button>
+
+<!-- ══ SPLASH ══ -->
+<div id="splash">
+    <div class="particles"></div>
+    <div class="torii">⛩️</div>
+    <h1>VOYAVERSE</h1>
+    <p>Virtual Japan · Cultural Immersion</p>
+    <button id="enterBtn" onclick="enterWorld()">✈️ Enter Japan</button>
+</div>
+
+<!-- ══ PROFESSION SCREEN ══ -->
+<div id="profScreen">
+    <div style="font-size:50px;margin-bottom:16px">🌸</div>
+    <h2>Who Are You?</h2>
+    <p>Your Japanese guides will greet you accordingly</p>
+    <div class="prof-grid2">
+        <div class="prof-card2" onclick="selectProf('business',this)">
+            <div class="icon">💼</div>
+            <h3>Business</h3>
+            <p>Corporate etiquette</p>
+        </div>
+        <div class="prof-card2" onclick="selectProf('student',this)">
+            <div class="icon">🎓</div>
+            <h3>Student</h3>
+            <p>Academic life</p>
+        </div>
+        <div class="prof-card2" onclick="selectProf('tourist',this)">
+            <div class="icon">📸</div>
+            <h3>Tourist</h3>
+            <p>Sightseeing</p>
+        </div>
+        <div class="prof-card2" onclick="selectProf('expat',this)">
+            <div class="icon">🏠</div>
+            <h3>Expat</h3>
+            <p>Daily life</p>
         </div>
     </div>
+    <div style="margin-top:24px">
+        <button class="btn-vr btn-red" id="profContinue" disabled onclick="startVR()" style="padding:14px 48px;font-size:16px">
+            Enter the World →
+        </button>
+    </div>
+</div>
 
-    <!-- Profession Selection -->
-    <div id="profession" class="screen">
-        <div class="container">
-            <h2 class="text-center">Select Your Profession</h2>
-            <p class="text-center" style="color: #666; margin-bottom: 20px;">
-                We'll customize your training based on your needs
-            </p>
-            <div class="prof-grid">
-                <div class="prof-card" onclick="selectProf('business', this)">
-                    <div class="prof-icon">💼</div>
-                    <h3>Business Professional</h3>
-                    <p>Meetings, networking, corporate etiquette</p>
-                </div>
-                <div class="prof-card" onclick="selectProf('student', this)">
-                    <div class="prof-icon">🎓</div>
-                    <h3>International Student</h3>
-                    <p>University life, academic settings</p>
-                </div>
-                <div class="prof-card" onclick="selectProf('tourist', this)">
-                    <div class="prof-icon">📸</div>
-                    <h3>Tourist</h3>
-                    <p>Sightseeing, dining, transportation</p>
-                </div>
-                <div class="prof-card" onclick="selectProf('expat', this)">
-                    <div class="prof-icon">🏠</div>
-                    <h3>Expat</h3>
-                    <p>Daily life, settling in</p>
+<!-- ══ MODULE SCREEN ══ -->
+<div id="moduleScreen">
+    <h2>🗾 Choose Your Activity</h2>
+    <div class="module-list">
+        <div class="module-item" onclick="openExercises('conv')">
+            <div class="mi-icon">💬</div>
+            <div>
+                <h3>Conversation Scenarios</h3>
+                <p>Talk with Japanese locals</p>
+            </div>
+            <div class="mi-badge" id="convBadge">0/3</div>
+        </div>
+        <div class="module-item" onclick="openExercises('listen')">
+            <div class="mi-icon">🎧</div>
+            <div>
+                <h3>Listening Exercises</h3>
+                <p>Train your ear for Japanese</p>
+            </div>
+            <div class="mi-badge" id="listenBadge">0/3</div>
+        </div>
+        <div class="module-item" onclick="openExercises('speak')">
+            <div class="mi-icon">🎤</div>
+            <div>
+                <h3>Speaking Practice</h3>
+                <p>Speak with your guide</p>
+            </div>
+            <div class="mi-badge" id="speakBadge">0/3</div>
+        </div>
+    </div>
+    <button id="closeModule" onclick="closeModuleScreen()">🌏 Back to World</button>
+</div>
+
+<!-- ══ EXERCISE LIST SCREEN ══ -->
+<div id="exerciseScreen">
+    <h2 id="exerciseTitle">Select Exercise</h2>
+    <div class="ex-list" id="exerciseList"></div>
+    <button id="backToModules" onclick="openModuleScreen()">← Back</button>
+</div>
+
+<!-- ══ VR SCENE ══ -->
+<a-scene id="vrScene" style="display:none" vr-mode-ui="enabled: true" renderer="antialias: true; colorManagement: true">
+
+    <!-- Assets -->
+    <a-assets>
+        <img id="sky-day" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg" crossorigin="anonymous">
+    </a-assets>
+
+    <!-- Sky with gradient effect using custom color -->
+    <a-sky color="#87CEEB"></a-sky>
+
+    <!-- Ground (tatami-like pattern) -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="200" height="200"
+             color="#8B7355" roughness="0.9"></a-plane>
+
+    <!-- Ground detail pattern tiles -->
+    <a-entity id="groundTiles"></a-entity>
+
+    <!-- === JAPANESE VILLAGE === -->
+
+    <!-- Torii Gate (Entrance) -->
+    <a-entity position="0 0 -12">
+        <!-- Left pillar -->
+        <a-cylinder position="-3 4 0" height="8" radius="0.3" color="#c0392b"></a-cylinder>
+        <!-- Right pillar -->
+        <a-cylinder position="3 4 0" height="8" radius="0.3" color="#c0392b"></a-cylinder>
+        <!-- Top beam -->
+        <a-box position="0 8.2 0" width="8" height="0.5" depth="0.5" color="#922b21"></a-box>
+        <!-- Second beam -->
+        <a-box position="0 7.2 0" width="7" height="0.4" depth="0.4" color="#c0392b"></a-box>
+        <!-- Kasagi ends (curves achieved with boxes) -->
+        <a-box position="-4 8.2 0" width="0.6" height="0.8" depth="0.5" color="#922b21"></a-box>
+        <a-box position="4 8.2 0" width="0.6" height="0.8" depth="0.5" color="#922b21"></a-box>
+        <!-- Path stones -->
+        <a-cylinder position="0 0.05 2" radius="0.5" height="0.1" color="#aaa" roughness="0.9"></a-cylinder>
+        <a-cylinder position="0 0.05 0" radius="0.5" height="0.1" color="#aaa" roughness="0.9"></a-cylinder>
+        <a-cylinder position="0 0.05 -2" radius="0.5" height="0.1" color="#aaa" roughness="0.9"></a-cylinder>
+    </a-entity>
+
+    <!-- Stone path -->
+    <a-entity id="stonePath">
+        <a-cylinder position="0 0.05 -8" radius="0.7" height="0.1" color="#999" roughness="0.9"></a-cylinder>
+        <a-cylinder position="0 0.05 -5" radius="0.7" height="0.1" color="#aaa" roughness="0.9"></a-cylinder>
+        <a-cylinder position="0 0.05 -2" radius="0.7" height="0.1" color="#999" roughness="0.9"></a-cylinder>
+        <a-cylinder position="0 0.05 1" radius="0.7" height="0.1" color="#bbb" roughness="0.9"></a-cylinder>
+    </a-entity>
+
+    <!-- Japanese Temple -->
+    <a-entity position="-10 0 -18">
+        <!-- Base -->
+        <a-box position="0 1 0" width="10" height="2" depth="8" color="#deb887"></a-box>
+        <!-- Walls -->
+        <a-box position="0 3 0" width="9" height="2" depth="7" color="#cd853f"></a-box>
+        <!-- Roof layer 1 (pagoda style) -->
+        <a-cone position="0 5 0" height="3" radius-bottom="5.5" radius-top="0.1" color="#8b0000"></a-cone>
+        <!-- Roof layer 2 -->
+        <a-cone position="0 7 0" height="2.5" radius-bottom="4" radius-top="0.1" color="#a00000"></a-cone>
+        <!-- Roof cap / spire -->
+        <a-cylinder position="0 9 0" height="1.5" radius="0.15" color="#ffd700"></a-cylinder>
+        <!-- Temple doors -->
+        <a-box position="0 2 3.6" width="2" height="3" depth="0.1" color="#5d4037"></a-box>
+        <!-- Bell -->
+        <a-cylinder position="5 5 0" height="1.2" radius="0.6" color="#b8860b"></a-cylinder>
+        <!-- Bell post -->
+        <a-cylinder position="5 4.2 0" height="2" radius="0.1" color="#5d4037"></a-cylinder>
+        <!-- Lanterns -->
+        <a-cylinder position="-2 2.5 3.5" height="0.8" radius="0.2" color="#ff4500"></a-cylinder>
+        <a-cylinder position="2 2.5 3.5" height="0.8" radius="0.2" color="#ff4500"></a-cylinder>
+    </a-entity>
+
+    <!-- Tea House -->
+    <a-entity position="12 0 -16">
+        <a-box position="0 1.5 0" width="7" height="3" depth="6" color="#e8d5b7"></a-box>
+        <a-cone position="0 4 0" height="2" radius-bottom="4.5" radius-top="0.1" color="#8b4513"></a-cone>
+        <!-- Shoji door -->
+        <a-box position="0 1.5 3.1" width="2.5" height="2.8" depth="0.1" color="#f5f5dc" opacity="0.6"></a-box>
+        <!-- Sign -->
+        <a-box position="0 5.5 0" width="2" height="0.8" depth="0.2" color="#8b0000"></a-box>
+        <!-- Bamboo fencing -->
+        <a-cylinder position="-3.5 1 3.5" height="2" radius="0.08" color="#9acd32"></a-cylinder>
+        <a-cylinder position="-3 1 3.5" height="2" radius="0.08" color="#9acd32"></a-cylinder>
+        <a-cylinder position="3 1 3.5" height="2" radius="0.08" color="#9acd32"></a-cylinder>
+        <a-cylinder position="3.5 1 3.5" height="2" radius="0.08" color="#9acd32"></a-cylinder>
+    </a-entity>
+
+    <!-- Cherry Blossom Trees -->
+    <a-entity id="trees">
+        <!-- Tree 1 -->
+        <a-entity position="-5 0 -8">
+            <a-cylinder position="0 2 0" height="4" radius="0.2" color="#8B6914"></a-cylinder>
+            <a-sphere position="0 5 0" radius="2.5" color="#ffb7c5" roughness="0.8" opacity="0.9"></a-sphere>
+            <a-sphere position="1.2 4.5 0" radius="1.8" color="#ffc0cb" roughness="0.8" opacity="0.85"></a-sphere>
+            <a-sphere position="-1 4.5 0.8" radius="1.7" color="#ffaec9" roughness="0.8" opacity="0.85"></a-sphere>
+        </a-entity>
+        <!-- Tree 2 -->
+        <a-entity position="5 0 -10">
+            <a-cylinder position="0 2 0" height="4" radius="0.2" color="#8B6914"></a-cylinder>
+            <a-sphere position="0 5 0" radius="2.5" color="#ffc0cb" roughness="0.8" opacity="0.9"></a-sphere>
+            <a-sphere position="-1 4.5 0.5" radius="1.8" color="#ffb7c5" roughness="0.8" opacity="0.85"></a-sphere>
+        </a-entity>
+        <!-- Tree 3 -->
+        <a-entity position="-8 0 -20">
+            <a-cylinder position="0 2 0" height="4" radius="0.2" color="#8B6914"></a-cylinder>
+            <a-sphere position="0 5 0" radius="2.5" color="#ffaec9" roughness="0.8" opacity="0.9"></a-sphere>
+        </a-entity>
+        <!-- Tree 4 -->
+        <a-entity position="8 0 -22">
+            <a-cylinder position="0 2 0" height="4" radius="0.2" color="#8B6914"></a-cylinder>
+            <a-sphere position="0 5 0" radius="2.5" color="#ffb7c5" roughness="0.8" opacity="0.9"></a-sphere>
+        </a-entity>
+    </a-entity>
+
+    <!-- Lantern posts along path -->
+    <a-entity>
+        <a-entity position="-2.5 0 -6">
+            <a-cylinder position="0 2 0" height="4" radius="0.1" color="#5d4037"></a-cylinder>
+            <a-box position="0 4 0" width="0.5" height="0.7" depth="0.5" color="#ff4500" opacity="0.8" emissive="#ff4f00" emissive-intensity="0.5"></a-box>
+        </a-entity>
+        <a-entity position="2.5 0 -6">
+            <a-cylinder position="0 2 0" height="4" radius="0.1" color="#5d4037"></a-cylinder>
+            <a-box position="0 4 0" width="0.5" height="0.7" depth="0.5" color="#ff4500" opacity="0.8" emissive="#ff4f00" emissive-intensity="0.5"></a-box>
+        </a-entity>
+        <a-entity position="-2.5 0 -14">
+            <a-cylinder position="0 2 0" height="4" radius="0.1" color="#5d4037"></a-cylinder>
+            <a-box position="0 4 0" width="0.5" height="0.7" depth="0.5" color="#ff4500" opacity="0.8" emissive="#ff4f00" emissive-intensity="0.5"></a-box>
+        </a-entity>
+        <a-entity position="2.5 0 -14">
+            <a-cylinder position="0 2 0" height="4" radius="0.1" color="#5d4037"></a-cylinder>
+            <a-box position="0 4 0" width="0.5" height="0.7" depth="0.5" color="#ff4500" opacity="0.8" emissive="#ff4f00" emissive-intensity="0.5"></a-box>
+        </a-entity>
+    </a-entity>
+
+    <!-- Koi Pond -->
+    <a-entity position="10 0 -6">
+        <a-cylinder position="0 0.1 0" height="0.4" radius="3" color="#1a6b9a" opacity="0.8"></a-cylinder>
+        <a-sphere position="-1 0.3 -0.5" radius="0.25" color="#ff6600"></a-sphere>
+        <a-sphere position="1 0.3 0.5" radius="0.2" color="#ffffff"></a-sphere>
+        <a-sphere position="0 0.3 1" radius="0.22" color="#ff6600"></a-sphere>
+        <!-- Rocks around pond -->
+        <a-sphere position="-3.2 0.2 0" radius="0.4" color="#888" roughness="1"></a-sphere>
+        <a-sphere position="3.2 0.2 0" radius="0.35" color="#999" roughness="1"></a-sphere>
+        <a-sphere position="0 0.2 -3.2" radius="0.45" color="#777" roughness="1"></a-sphere>
+    </a-entity>
+
+    <!-- Mount Fuji in background -->
+    <a-cone position="0 0 -100" height="40" radius-bottom="25" radius-top="0.1" color="#8892a4" roughness="0.9"></a-cone>
+    <a-cone position="0 38 -100" height="8" radius-bottom="7" radius-top="0.1" color="#fff" roughness="0.8"></a-cone>
+
+    <!-- === NPCs (Static billboard-style signs) === -->
+    <!-- Airport Officer NPC -->
+    <a-entity id="npc1" position="-4 0 -5" class="npc-trigger" data-npc="conv" data-id="1">
+        <a-cylinder height="3.5" radius="0.4" color="#2c3e50"></a-cylinder>
+        <a-sphere position="0 2.3 0" radius="0.45" color="#f5cba7"></a-sphere>
+        <!-- Hat -->
+        <a-cylinder position="0 2.85 0" height="0.4" radius="0.5" color="#1a252f"></a-cylinder>
+        <a-cylinder position="0 3.1 0" height="0.2" radius="0.3" color="#1a252f"></a-cylinder>
+        <!-- Eyes -->
+        <a-sphere position="-0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-sphere position="0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <!-- Name label float -->
+        <a-text value="✈️ Immigration\nOfficer Tanaka" position="0 4.2 0" align="center" color="#ffd93d" width="3" side="double"></a-text>
+        <!-- Interaction ring -->
+        <a-torus position="0 0.05 0" radius="1.2" radius-tubular="0.05" color="#ffd93d" animation="property:rotation; to:0 360 0; loop:true; dur:3000; easing:linear"></a-torus>
+    </a-entity>
+
+    <!-- Restaurant Server NPC -->
+    <a-entity id="npc2" position="4 0 -5" class="npc-trigger" data-npc="conv" data-id="2">
+        <a-cylinder height="3.5" radius="0.4" color="#e74c3c"></a-cylinder>
+        <a-sphere position="0 2.3 0" radius="0.45" color="#f5cba7"></a-sphere>
+        <!-- apron -->
+        <a-box position="0 1.5 0.45" width="0.7" height="1.4" depth="0.05" color="#fff" opacity="0.9"></a-box>
+        <!-- Eyes -->
+        <a-sphere position="-0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-sphere position="0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-text value="🍜 Chef Yamamoto\nRestaurant Guide" position="0 4.2 0" align="center" color="#ffd93d" width="3" side="double"></a-text>
+        <a-torus position="0 0.05 0" radius="1.2" radius-tubular="0.05" color="#ff6b6b" animation="property:rotation; to:0 360 0; loop:true; dur:3000; easing:linear"></a-torus>
+    </a-entity>
+
+    <!-- Train Guide NPC -->
+    <a-entity id="npc3" position="0 0 -18" class="npc-trigger" data-npc="conv" data-id="3">
+        <a-cylinder height="3.5" radius="0.4" color="#1a5276"></a-cylinder>
+        <a-sphere position="0 2.3 0" radius="0.45" color="#f5cba7"></a-sphere>
+        <!-- Conductor hat -->
+        <a-cylinder position="0 2.85 0" height="0.5" radius="0.5" color="#1a2b3c"></a-cylinder>
+        <a-box position="0 3.15 0" width="1.2" height="0.15" depth="0.8" color="#1a2b3c"></a-box>
+        <!-- Eyes -->
+        <a-sphere position="-0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-sphere position="0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-text value="🚄 Conductor Sato\nTrain Guide" position="0 4.2 0" align="center" color="#ffd93d" width="3" side="double"></a-text>
+        <a-torus position="0 0.05 0" radius="1.2" radius-tubular="0.05" color="#6bcb77" animation="property:rotation; to:0 360 0; loop:true; dur:3000; easing:linear"></a-torus>
+    </a-entity>
+
+    <!-- Listening Sensei NPC -->
+    <a-entity id="npc4" position="-12 0 -10" class="npc-trigger" data-npc="listen" data-id="1">
+        <a-cylinder height="3.5" radius="0.4" color="#6c3483"></a-cylinder>
+        <a-sphere position="0 2.3 0" radius="0.45" color="#f5cba7"></a-sphere>
+        <!-- Hair bun -->
+        <a-sphere position="0 2.85 0" radius="0.3" color="#2c1a0e"></a-sphere>
+        <!-- Kimono pattern -->
+        <a-box position="0 1.5 0.41" width="0.8" height="1.5" depth="0.05" color="#8e44ad" opacity="0.7"></a-box>
+        <!-- Eyes -->
+        <a-sphere position="-0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-sphere position="0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-text value="🎌 Sensei Kimura\nListening Trainer" position="0 4.2 0" align="center" color="#ffd93d" width="3" side="double"></a-text>
+        <a-torus position="0 0.05 0" radius="1.2" radius-tubular="0.05" color="#c39bd3" animation="property:rotation; to:0 360 0; loop:true; dur:3000; easing:linear"></a-torus>
+    </a-entity>
+
+    <!-- Speaking Coach NPC -->
+    <a-entity id="npc5" position="14 0 -10" class="npc-trigger" data-npc="speak" data-id="1">
+        <a-cylinder height="3.5" radius="0.4" color="#1e8449"></a-cylinder>
+        <a-sphere position="0 2.3 0" radius="0.45" color="#f5cba7"></a-sphere>
+        <!-- bow tie -->
+        <a-cone position="0 2.0 0.45" height="0.3" radius-bottom="0.2" radius-top="0" color="#e74c3c" rotation="0 0 0"></a-cone>
+        <!-- Eyes -->
+        <a-sphere position="-0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-sphere position="0.15 2.35 0.4" radius="0.06" color="#222"></a-sphere>
+        <a-text value="🎤 Sensei Kato\nSpeaking Coach" position="0 4.2 0" align="center" color="#ffd93d" width="3" side="double"></a-text>
+        <a-torus position="0 0.05 0" radius="1.2" radius-tubular="0.05" color="#82e0aa" animation="property:rotation; to:0 360 0; loop:true; dur:3000; easing:linear"></a-torus>
+    </a-entity>
+
+    <!-- Ambient particles (sakura petals simulation) -->
+    <a-entity id="sakura1" position="-3 5 -8"
+        animation="property:position; from:-3 5 -8; to:-5 0 -6; loop:true; dur:4000; easing:linear; dir:alternate">
+        <a-sphere radius="0.08" color="#ffb7c5"></a-sphere>
+    </a-entity>
+    <a-entity id="sakura2" position="3 6 -10"
+        animation="property:position; from:3 6 -10; to:5 0 -8; loop:true; dur:5000; easing:linear; dir:alternate">
+        <a-sphere radius="0.07" color="#ffc0cb"></a-sphere>
+    </a-entity>
+    <a-entity id="sakura3" position="0 7 -12"
+        animation="property:position; from:0 7 -12; to:2 0 -14; loop:true; dur:6000; easing:linear; dir:alternate">
+        <a-sphere radius="0.09" color="#ffaec9"></a-sphere>
+    </a-entity>
+
+    <!-- Lighting -->
+    <a-light type="ambient" color="#FFF8E7" intensity="0.7"></a-light>
+    <a-light type="directional" position="5 10 5" intensity="0.8" color="#FFF0D0"></a-light>
+    <a-light type="point" position="-10 5 -18" intensity="0.4" color="#ffd700" distance="15"></a-light>
+    <a-light type="point" position="12 5 -16" intensity="0.3" color="#ff9900" distance="12"></a-light>
+
+    <!-- Camera rig with WASD + look controls -->
+    <a-entity id="rig" position="0 1.6 4">
+        <a-camera id="camera" look-controls wasd-controls="acceleration:30" fov="70">
+            <!-- Crosshair / cursor -->
+            <a-cursor color="#ff6b6b" fuse="false" raycaster="objects:.npc-trigger" radius="0.01"></a-cursor>
+        </a-camera>
+    </a-entity>
+
+</a-scene>
+
+<!-- ══ HUD ══ -->
+<div id="hud">
+    <div id="topbar">
+        <div class="logo">⛩️ <span>VOYA</span>VERSE</div>
+        <div id="progressBar"></div>
+        <div style="display:flex;gap:10px">
+            <button id="vrBtn" onclick="toggleVRMode()">🥽 VR Mode</button>
+            <button class="btn-vr btn-ghost" style="pointer-events:all;font-size:12px;padding:8px 14px" onclick="openModuleScreen()">📋 Modules</button>
+        </div>
+    </div>
+    <div id="locationLabel">📍 Location: <span id="locText">Temple District</span></div>
+    <div id="compass">🧭</div>
+    <div id="npcPrompt">Press <kbd style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:4px">E</kbd> or click the NPC to interact</div>
+
+    <!-- ══ DIALOG ══ -->
+    <div id="dialog">
+        <div class="npc-header">
+            <div class="npc-avatar" id="dialogAvatar">👤</div>
+            <div class="npc-info">
+                <div class="npc-name" id="dialogName">Guide</div>
+                <div class="npc-role" id="dialogRole">Japanese Cultural Expert</div>
+            </div>
+            <button class="btn-vr btn-ghost" onclick="closeDialog()" style="padding:6px 14px;pointer-events:all;font-size:13px">✕</button>
+        </div>
+
+        <!-- Conversation section -->
+        <div id="convSection">
+            <div class="dialog-jp" id="dialogJP"></div>
+            <div class="dialog-en" id="dialogEN"></div>
+            <div class="choices" id="choiceList"></div>
+            <div class="tip-card hidden" id="tipCard">
+                <h5>🏮 Cultural Tips</h5>
+                <ul id="tipList"></ul>
+            </div>
+            <div class="btn-row">
+                <button class="btn-vr btn-ghost" id="speakDialog" onclick="speakCurrentDialog()">🔊 Hear Japanese</button>
+            </div>
+        </div>
+
+        <!-- Listening section -->
+        <div id="listenSection" style="display:none">
+            <div class="listen-play">
+                <button class="play-circle" onclick="playListenAudio()">▶</button>
+                <button class="transcript-toggle" onclick="toggleTranscript()">📜 Transcript</button>
+            </div>
+            <div id="transcriptBox">
+                <p id="tJP" style="font-size:16px;margin-bottom:6px;color:#fff"></p>
+                <p id="tEN" style="font-size:13px;color:rgba(255,255,255,.5);font-style:italic"></p>
+            </div>
+            <div id="qContainer"></div>
+            <div class="btn-row">
+                <button class="btn-vr btn-red" id="submitListenBtn" onclick="submitListening()" disabled>Submit Answers</button>
+            </div>
+            <div id="scorePanel">
+                <div id="scoreText"></div>
+                <div id="scoreMsg"></div>
+                <div class="btn-row">
+                    <button class="btn-vr btn-green" onclick="closeDialog()">✓ Continue</button>
                 </div>
             </div>
-            <div class="text-center mt-20">
-                <button class="btn btn-primary" id="continueBtn" disabled onclick="goto('dashboard')">
-                    Continue
-                </button>
+        </div>
+
+        <!-- Speaking section -->
+        <div id="speakSection" style="display:none">
+            <div class="speak-prompt">
+                <h4 id="speakSubTitle"></h4>
+                <p id="speakPromptText"></p>
+            </div>
+            <div class="mic-area">
+                <button id="micBtn2" onclick="toggleRecord()">🎤</button>
+                <div id="micLabel2">Tap to Record</div>
+            </div>
+            <div id="speechResultBox" style="background:rgba(255,255,255,.06);border-radius:10px;padding:12px;margin-bottom:12px;display:none">
+                <p style="color:rgba(255,255,255,.6);font-size:13px;margin-bottom:4px">Your response:</p>
+                <p id="speechResultText" style="color:#fff;font-size:15px"></p>
+            </div>
+            <div class="model-answer-box" id="modelAnswerBox">
+                <p style="color:#ffd93d;font-size:12px;font-weight:700;margin-bottom:10px">MODEL ANSWER</p>
+                <p class="model-jp" id="modelJP2"></p>
+                <p class="model-en" id="modelEN2"></p>
+            </div>
+            <div class="btn-row">
+                <button class="btn-vr btn-ghost" onclick="showModelAnswer()">📖 Model Answer</button>
+                <button class="btn-vr btn-green" onclick="completeSpeaking()">✓ Mark Complete</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Dashboard -->
-    <div id="dashboard" class="screen">
-        <div class="nav">
-            <div class="nav-title">🌏 VoyaVerse</div>
-            <div>🇯🇵 Japan</div>
-        </div>
-        <div class="container">
-            <h2 id="greeting">Welcome</h2>
-            <div class="progress-ring">
-                <div class="progress-num" id="progressNum">0%</div>
-                <p style="color: #666;">Overall Progress</p>
-            </div>
-            <div class="module-grid">
-                <div class="module-card" onclick="goto('conversations')">
-                    <div class="module-icon">💬</div>
-                    <div class="module-info">
-                        <h3>Conversation Scenarios</h3>
-                        <p id="convProgress">0/3 completed</p>
-                    </div>
-                </div>
-                <div class="module-card" onclick="goto('listening')">
-                    <div class="module-icon">🎧</div>
-                    <div class="module-info">
-                        <h3>Listening Exercises</h3>
-                        <p id="listenProgress">0/3 completed</p>
-                    </div>
-                </div>
-                <div class="module-card" onclick="goto('speaking')">
-                    <div class="module-icon">🎤</div>
-                    <div class="module-info">
-                        <h3>Speaking Exercises</h3>
-                        <p id="speakProgress">0/3 completed</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- Toast -->
+<div id="toast"></div>
 
-    <!-- Conversation List -->
-    <div id="conversations" class="screen">
-        <div class="nav">
-            <button class="back-btn" onclick="goto('dashboard')">←</button>
-            <div class="nav-title">Conversation Scenarios</div>
-            <div></div>
-        </div>
-        <div class="container">
-            <div class="exercise-list" id="convList"></div>
-        </div>
-    </div>
-
-    <!-- Active Conversation -->
-    <div id="conv-active" class="screen">
-        <div class="nav">
-            <button class="back-btn" onclick="exitConv()">←</button>
-            <div class="nav-title" id="convTitle">Scenario</div>
-            <div id="turnNum">Turn 1/3</div>
-        </div>
-        <div class="container">
-            <div class="context-box" id="context"></div>
-            <div class="chat" id="chat"></div>
-            <div class="options" id="convOptions"></div>
-            <div class="tips-box hidden" id="tipsBox">
-                <h4>🏮 Cultural Tips</h4>
-                <ul id="tipsList"></ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Listening List -->
-    <div id="listening" class="screen">
-        <div class="nav">
-            <button class="back-btn" onclick="goto('dashboard')">←</button>
-            <div class="nav-title">Listening Exercises</div>
-            <div></div>
-        </div>
-        <div class="container">
-            <div class="exercise-list" id="listenList"></div>
-        </div>
-    </div>
-
-    <!-- Active Listening -->
-    <div id="listen-active" class="screen">
-        <div class="nav">
-            <button class="back-btn" onclick="exitListen()">←</button>
-            <div class="nav-title" id="listenTitle">Listening</div>
-            <div></div>
-        </div>
-        <div class="container">
-            <div class="audio-player">
-                <button class="play-btn" onclick="playAudio()">▶</button>
-                <p>Listen to the audio, then answer the questions</p>
-                <button class="btn btn-secondary" onclick="toggleTranscript()" style="margin-top: 10px;">
-                    Show Transcript
-                </button>
-                <div id="transcript" class="hidden" style="margin-top: 15px; text-align: left;">
-                    <p id="transcriptJP" style="margin-bottom: 10px;"></p>
-                    <p id="transcriptEN" style="font-size: 14px; color: #666; font-style: italic;"></p>
-                </div>
-            </div>
-            <div id="questions"></div>
-            <div class="text-center mt-20">
-                <button class="btn btn-primary" id="submitBtn" onclick="submitListen()" disabled>
-                    Submit Answers
-                </button>
-            </div>
-            <div id="results" class="hidden text-center mt-20">
-                <h3 id="score"></h3>
-                <p id="resultMsg"></p>
-                <button class="btn btn-primary mt-20" onclick="exitListen()">
-                    Back to Exercises
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Speaking List -->
-    <div id="speaking" class="screen">
-        <div class="nav">
-            <button class="back-btn" onclick="goto('dashboard')">←</button>
-            <div class="nav-title">Speaking Exercises</div>
-            <div></div>
-        </div>
-        <div class="container">
-            <div class="exercise-list" id="speakList"></div>
-        </div>
-    </div>
-
-    <!-- Active Speaking -->
-    <div id="speak-active" class="screen">
-        <div class="nav">
-            <button class="back-btn" onclick="exitSpeak()">←</button>
-            <div class="nav-title" id="speakTitle">Speaking</div>
-            <div></div>
-        </div>
-        <div class="container">
-            <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                <h3 id="speakSubtitle"></h3>
-                <p id="speakPrompt" style="color: #666; margin-top: 10px;"></p>
-            </div>
-            <div class="text-center">
-                <button class="mic-btn" id="micBtn" onclick="toggleRecord()">🎤</button>
-                <p id="micLabel">Tap to Record</p>
-            </div>
-            <div id="speechResult" class="hidden" style="background: white; padding: 15px; border-radius: 10px; margin: 20px 0;">
-                <h4>Your Response:</h4>
-                <p id="speechText" style="margin-top: 8px;"></p>
-            </div>
-            <div class="text-center">
-                <button class="btn btn-secondary" onclick="showModel()">Show Model Answer</button>
-            </div>
-            <div id="modelSection" class="hidden mt-20">
-                <h4>Model Answer</h4>
-                <div class="model-answer">
-                    <p class="model-jp" id="modelJP"></p>
-                    <p class="model-en" id="modelEN"></p>
-                </div>
-                <button class="btn btn-primary" onclick="completeSpeak()" style="width: 100%; margin-top: 15px;">
-                    Mark Complete
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast -->
-    <div id="toast" class="toast"></div>
-
-    <script>
-        // Data
-        const CONVERSATIONS = [
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const CONVERSATIONS = [
+    {
+        id:1, title:"Airport Arrival", subtitle:"Immigration & Customs",
+        avatar:"✈️", npcName:"Officer Tanaka", npcRole:"Immigration Official",
+        turns:[
             {
-                id: 1,
-                title: "Airport Arrival",
-                subtitle: "Immigration & Customs",
-                turns: [
-                    {
-                        speaker: "Officer",
-                        jp: "パスポートを見せてください。",
-                        en: "Please show me your passport.",
-                        options: [
-                            { text: "Hand over passport with slight bow", result: "correct", feedback: "✅ Polite and respectful" },
-                            { text: "Say 'Here!' loudly", result: "incorrect", feedback: "❌ Too casual and loud" },
-                            { text: "Deep bow and hand passport", result: "partial", feedback: "⚠️ Deep bow unnecessary here" }
-                        ]
-                    },
-                    {
-                        speaker: "Officer",
-                        jp: "日本に何日滞在しますか？",
-                        en: "How long will you stay?",
-                        options: [
-                            { text: '"一週間です" (One week)', jp: "一週間です", result: "correct", feedback: "✅ Clear response" },
-                            { text: '"三ヶ月です" (Three months)', jp: "三ヶ月です", result: "correct", feedback: "✅ Appropriate" },
-                            { text: '"一年です" (One year)', jp: "一年です", result: "correct", feedback: "✅ Good for long stay" }
-                        ]
-                    },
-                    {
-                        speaker: "Officer",
-                        jp: "日本へようこそ。",
-                        en: "Welcome to Japan.",
-                        options: [
-                            { text: '"ありがとうございます" with bow', jp: "ありがとうございます", result: "correct", feedback: "✅ Perfect!" },
-                            { text: '"Thanks!" in English', result: "incorrect", feedback: "❌ Too informal" },
-                            { text: 'Silent bow', result: "partial", feedback: "⚠️ Verbal thanks better" }
-                        ]
-                    }
-                ],
-                tips: [
-                    "Keep documents organized",
-                    "Speak politely and calmly",
-                    "Small bow when receiving passport is appreciated",
-                    "Don't joke with immigration officers"
+                speaker:"Officer Tanaka",
+                jp:"パスポートを見せてください。",
+                en:"Please show me your passport.",
+                options:[
+                    {text:"Hand over passport with slight bow",result:"correct",feedback:"✅ Polite and respectful"},
+                    {text:"Say 'Here!' loudly",result:"incorrect",feedback:"❌ Too casual and loud"},
+                    {text:"Deep bow and hand passport",result:"partial",feedback:"⚠️ Deep bow unnecessary here"}
                 ]
             },
             {
-                id: 2,
-                title: "Restaurant Dining",
-                subtitle: "Ordering Food",
-                turns: [
-                    {
-                        speaker: "Server",
-                        jp: "いらっしゃいませ！何名様ですか？",
-                        en: "Welcome! How many people?",
-                        options: [
-                            { text: '"二人です" (Two people)', jp: "二人です", result: "correct", feedback: "✅ Clear" },
-                            { text: '"一人です" (One person)', jp: "一人です", result: "correct", feedback: "✅ Good" },
-                            { text: 'Hold up fingers', result: "partial", feedback: "⚠️ Words are better" }
-                        ]
-                    },
-                    {
-                        speaker: "System",
-                        jp: "",
-                        en: "Server brings wet towel. What do you do?",
-                        options: [
-                            { text: "Wipe hands only, fold neatly", result: "correct", feedback: "✅ Correct etiquette" },
-                            { text: "Wipe face and neck", result: "incorrect", feedback: "❌ Rude in formal settings" },
-                            { text: "Ignore towel", result: "partial", feedback: "⚠️ Better to use it" }
-                        ]
-                    },
-                    {
-                        speaker: "System",
-                        jp: "",
-                        en: "Before eating, what should you say?",
-                        options: [
-                            { text: '"いただきます" (Itadakimasu)', jp: "いただきます", result: "correct", feedback: "✅ Essential phrase!" },
-                            { text: "Start eating silently", result: "incorrect", feedback: "❌ Always say Itadakimasu" },
-                            { text: '"Looks good!" in English', result: "partial", feedback: "⚠️ Say Itadakimasu instead" }
-                        ]
-                    }
-                ],
-                tips: [
-                    'Say "Itadakimasu" before eating',
-                    'Say "Gochisousama" after finishing',
-                    "No tipping in Japan",
-                    "Slurping noodles is OK",
-                    "Don't stick chopsticks upright in rice"
+                speaker:"Officer Tanaka",
+                jp:"日本に何日滞在しますか？",
+                en:"How long will you stay in Japan?",
+                options:[
+                    {text:'"一週間です" (One week)',jp:"一週間です",result:"correct",feedback:"✅ Clear response"},
+                    {text:'"三ヶ月です" (Three months)',jp:"三ヶ月です",result:"correct",feedback:"✅ Appropriate"},
+                    {text:'"一年です" (One year)',jp:"一年です",result:"correct",feedback:"✅ Good for long stay"}
                 ]
             },
             {
-                id: 3,
-                title: "Train Travel",
-                subtitle: "Using Public Transit",
-                turns: [
-                    {
-                        speaker: "System",
-                        jp: "",
-                        en: "Train is arriving. What do you do?",
-                        options: [
-                            { text: "Queue in marked lines, let passengers exit first", result: "correct", feedback: "✅ Perfect etiquette" },
-                            { text: "Push forward to get seat", result: "incorrect", feedback: "❌ Very rude" },
-                            { text: "Stand anywhere", result: "partial", feedback: "⚠️ Use queue lines" }
-                        ]
-                    },
-                    {
-                        speaker: "System",
-                        jp: "",
-                        en: "On crowded train, what should you do?",
-                        options: [
-                            { text: "Phone on silent, no talking loudly", result: "correct", feedback: "✅ Good manners" },
-                            { text: "Take phone call normally", result: "incorrect", feedback: "❌ Very rude" },
-                            { text: "Sit in priority seat", result: "incorrect", feedback: "❌ For elderly/pregnant" }
-                        ]
-                    },
-                    {
-                        speaker: "Announcement",
-                        jp: "まもなく渋谷です。",
-                        en: "Arriving at Shibuya soon.",
-                        options: [
-                            { text: "Move toward door calmly", result: "correct", feedback: "✅ Good preparation" },
-                            { text: "Rush and push others", result: "incorrect", feedback: "❌ Never push" },
-                            { text: "Wait until everyone exits", result: "partial", feedback: "⚠️ May miss your stop" }
-                        ]
-                    }
-                ],
-                tips: [
-                    "Trains run exactly on time",
-                    "Keep phone on silent",
-                    "No eating/drinking on local trains",
-                    "Give up priority seats",
-                    "Keep belongings compact"
+                speaker:"Officer Tanaka",
+                jp:"日本へようこそ。",
+                en:"Welcome to Japan.",
+                options:[
+                    {text:'"ありがとうございます" with bow',jp:"ありがとうございます",result:"correct",feedback:"✅ Perfect!"},
+                    {text:'"Thanks!" in English',result:"incorrect",feedback:"❌ Too informal"},
+                    {text:'Silent bow',result:"partial",feedback:"⚠️ Verbal thanks better"}
                 ]
             }
-        ];
-
-        const LISTENING = [
+        ],
+        tips:["Keep documents organized","Speak politely and calmly","Small bow when receiving documents","Never joke with immigration officers"]
+    },
+    {
+        id:2, title:"Restaurant Dining", subtitle:"Ordering Food",
+        avatar:"🍜", npcName:"Chef Yamamoto", npcRole:"Restaurant Owner",
+        turns:[
             {
-                id: 1,
-                title: "Airport Announcement",
-                jp: "日本航空123便、東京成田行きは、ゲート15番から、午後3時に出発いたします。",
-                en: "JAL Flight 123 to Tokyo Narita departs from Gate 15 at 3:00 PM.",
-                questions: [
-                    { q: "Flight number?", opts: ["123", "321", "213"], ans: 0 },
-                    { q: "Gate number?", opts: ["5", "15", "50"], ans: 1 },
-                    { q: "Departure time?", opts: ["3:00 AM", "3:00 PM", "5:00 PM"], ans: 1 }
+                speaker:"Chef Yamamoto",
+                jp:"いらっしゃいませ！何名様ですか？",
+                en:"Welcome! How many people?",
+                options:[
+                    {text:'"二人です" (Two people)',jp:"二人です",result:"correct",feedback:"✅ Clear"},
+                    {text:'"一人です" (One person)',jp:"一人です",result:"correct",feedback:"✅ Good"},
+                    {text:'Hold up fingers',result:"partial",feedback:"⚠️ Words are better"}
                 ]
             },
             {
-                id: 2,
-                title: "Restaurant Greeting",
-                jp: "いらっしゃいませ！何名様ですか？こちらへどうぞ。",
-                en: "Welcome! How many people? This way please.",
-                questions: [
-                    { q: "What does server say first?", opts: ["Goodbye", "Welcome", "Thank you"], ans: 1 },
-                    { q: "What does server ask?", opts: ["Your name", "How many people", "Your order"], ans: 1 },
-                    { q: "What does server say last?", opts: ["This way please", "Sit anywhere", "Pay now"], ans: 0 }
+                speaker:"Chef Yamamoto",
+                jp:"",
+                en:"Server brings wet towel. What do you do?",
+                options:[
+                    {text:"Wipe hands only, fold neatly",result:"correct",feedback:"✅ Correct etiquette"},
+                    {text:"Wipe face and neck",result:"incorrect",feedback:"❌ Rude in formal settings"},
+                    {text:"Ignore towel",result:"partial",feedback:"⚠️ Better to use it"}
                 ]
             },
             {
-                id: 3,
-                title: "Weather Report",
-                jp: "明日の東京の天気です。朝は曇り、午後から雨が降るでしょう。",
-                en: "Tomorrow's Tokyo weather: Morning cloudy, afternoon rain.",
-                questions: [
-                    { q: "Morning weather?", opts: ["Sunny", "Cloudy", "Rainy"], ans: 1 },
-                    { q: "Afternoon weather?", opts: ["Sunny", "Cloudy", "Rainy"], ans: 2 },
-                    { q: "Location?", opts: ["Osaka", "Tokyo", "Kyoto"], ans: 1 }
+                speaker:"Chef Yamamoto",
+                jp:"",
+                en:"Before eating, what should you say?",
+                options:[
+                    {text:'"いただきます" (Itadakimasu)',jp:"いただきます",result:"correct",feedback:"✅ Essential phrase!"},
+                    {text:"Start eating silently",result:"incorrect",feedback:"❌ Always say Itadakimasu"},
+                    {text:'"Looks good!" in English',result:"partial",feedback:"⚠️ Say Itadakimasu instead"}
                 ]
             }
-        ];
-
-        const SPEAKING = [
+        ],
+        tips:['Say "Itadakimasu" before eating','Say "Gochisousama" after finishing',"No tipping in Japan","Slurping noodles is acceptable","Don't stick chopsticks upright in rice"]
+    },
+    {
+        id:3, title:"Train Travel", subtitle:"Using Public Transit",
+        avatar:"🚄", npcName:"Conductor Sato", npcRole:"Train Conductor",
+        turns:[
             {
-                id: 1,
-                title: "Self Introduction",
-                subtitle: "Introduce yourself",
-                prompt: "Say your name, country, and purpose in Japan",
-                modelJP: "初めまして。[名前]と申します。[国]から来ました。",
-                modelEN: "Nice to meet you. I'm [Name]. I'm from [Country]."
+                speaker:"Conductor Sato",
+                jp:"",
+                en:"Train is arriving. What do you do?",
+                options:[
+                    {text:"Queue in marked lines, let passengers exit first",result:"correct",feedback:"✅ Perfect etiquette"},
+                    {text:"Push forward to get seat",result:"incorrect",feedback:"❌ Very rude"},
+                    {text:"Stand anywhere",result:"partial",feedback:"⚠️ Use queue lines"}
+                ]
             },
             {
-                id: 2,
-                title: "Asking Directions",
-                subtitle: "Find your way",
-                prompt: "Ask how to get to Tokyo Station",
-                modelJP: "すみません。東京駅はどこですか？",
-                modelEN: "Excuse me. Where is Tokyo Station?"
+                speaker:"Conductor Sato",
+                jp:"",
+                en:"On crowded train, what should you do?",
+                options:[
+                    {text:"Phone on silent, no talking loudly",result:"correct",feedback:"✅ Good manners"},
+                    {text:"Take phone call normally",result:"incorrect",feedback:"❌ Very rude"},
+                    {text:"Sit in priority seat",result:"incorrect",feedback:"❌ For elderly/pregnant only"}
+                ]
             },
             {
-                id: 3,
-                title: "Shopping",
-                subtitle: "Make a purchase",
-                prompt: "Ask the price and say you'll buy it",
-                modelJP: "すみません。これはいくらですか？これをください。",
-                modelEN: "Excuse me. How much is this? I'll take this please."
+                speaker:"Conductor Sato",
+                jp:"まもなく渋谷です。",
+                en:"Arriving at Shibuya soon.",
+                options:[
+                    {text:"Move toward door calmly",result:"correct",feedback:"✅ Good preparation"},
+                    {text:"Rush and push others",result:"incorrect",feedback:"❌ Never push"},
+                    {text:"Wait until everyone exits",result:"partial",feedback:"⚠️ May miss your stop"}
+                ]
             }
-        ];
+        ],
+        tips:["Trains run exactly on time","Keep phone on silent","No eating on local trains","Give up priority seats","Keep belongings compact"]
+    }
+];
 
-        // State
-        let state = {
-            profession: null,
-            currentConv: null,
-            currentTurn: 0,
-            currentListen: null,
-            listenAnswers: {},
-            currentSpeak: null,
-            progress: { conv: {}, listen: {}, speak: {} }
-        };
+const LISTENING = [
+    {
+        id:1, title:"Airport Announcement",
+        jp:"日本航空123便、東京成田行きは、ゲート15番から、午後3時に出発いたします。",
+        en:"JAL Flight 123 to Tokyo Narita departs from Gate 15 at 3:00 PM.",
+        questions:[
+            {q:"What is the flight number?",opts:["123","321","213"],ans:0},
+            {q:"Which gate?",opts:["5","15","50"],ans:1},
+            {q:"Departure time?",opts:["3:00 AM","3:00 PM","5:00 PM"],ans:1}
+        ]
+    },
+    {
+        id:2, title:"Restaurant Greeting",
+        jp:"いらっしゃいませ！何名様ですか？こちらへどうぞ。",
+        en:"Welcome! How many people? This way please.",
+        questions:[
+            {q:"What does server say first?",opts:["Goodbye","Welcome","Thank you"],ans:1},
+            {q:"What does server ask?",opts:["Your name","How many people","Your order"],ans:1},
+            {q:"What does server say last?",opts:["This way please","Sit anywhere","Pay now"],ans:0}
+        ]
+    },
+    {
+        id:3, title:"Weather Report",
+        jp:"明日の東京の天気です。朝は曇り、午後から雨が降るでしょう。",
+        en:"Tomorrow's Tokyo weather: Morning cloudy, afternoon rain.",
+        questions:[
+            {q:"Morning weather?",opts:["Sunny","Cloudy","Rainy"],ans:1},
+            {q:"Afternoon weather?",opts:["Sunny","Cloudy","Rainy"],ans:2},
+            {q:"Location?",opts:["Osaka","Tokyo","Kyoto"],ans:1}
+        ]
+    }
+];
 
-        // Load progress
-        const saved = localStorage.getItem('voyaverse');
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                state.profession = data.profession || null;
-                if (data.progress) {
-                    state.progress.conv = data.progress.conv || {};
-                    state.progress.listen = data.progress.listen || {};
-                    state.progress.speak = data.progress.speak || {};
-                }
-                
-                // If the user already selected a profession, we can pre-enable the continue button 
-                // or safely initialize the dashboard state. Let's keep them on welcome but allow easy resume.
-                if (state.profession) {
-                    // Update UI if we were on the profession screen, but since we start on welcome, 
-                    // they can just click 'Get Started' and then they see the active continue button.
-                }
-            } catch (e) {
-                console.error("Failed to parse local storage data:", e);
-            }
+const SPEAKING = [
+    {
+        id:1, title:"Self Introduction", subtitle:"Introduce yourself to your guide",
+        prompt:"Introduce your name, country, and reason for visiting Japan",
+        modelJP:"初めまして。[名前]と申します。[国]から来ました。よろしくお願いします。",
+        modelEN:"Nice to meet you. I'm [Name]. I'm from [Country]. Thank you for your kindness."
+    },
+    {
+        id:2, title:"Asking Directions", subtitle:"Navigate the virtual streets",
+        prompt:"Ask Conductor Sato how to get to Tokyo Station",
+        modelJP:"すみません。東京駅はどこですか？",
+        modelEN:"Excuse me. Where is Tokyo Station?"
+    },
+    {
+        id:3, title:"Shopping", subtitle:"Make a purchase at the gift shop",
+        prompt:"Ask the price and say you'll buy an item",
+        modelJP:"すみません。これはいくらですか？これをください。",
+        modelEN:"Excuse me. How much is this? I'll take this please."
+    }
+];
+
+const NPC_LISTEN_DATA = [
+    {id:1, npc:{avatar:"🎌", name:"Sensei Kimura", role:"Language & Listening Trainer"}},
+    {id:2, npc:{avatar:"🎌", name:"Sensei Kimura", role:"Language & Listening Trainer"}},
+    {id:3, npc:{avatar:"🎌", name:"Sensei Kimura", role:"Language & Listening Trainer"}}
+];
+
+const NPC_SPEAK_DATA = [
+    {id:1, npc:{avatar:"🎤", name:"Sensei Kato", role:"Speaking Coach"}},
+    {id:2, npc:{avatar:"🎤", name:"Sensei Kato", role:"Speaking Coach"}},
+    {id:3, npc:{avatar:"🎤", name:"Sensei Kato", role:"Speaking Coach"}}
+];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let state = {
+    profession: null,
+    progress: {conv:{}, listen:{}, speak:{}},
+    mode: null, // 'conv' | 'listen' | 'speak'
+    current: null,
+    currentTurn: 0,
+    listenAnswers: {},
+    recording: false,
+    nearNPC: null
+};
+
+// Load saved progress
+try {
+    const saved = JSON.parse(localStorage.getItem('voyaverse_vr') || '{}');
+    if (saved.progress) state.progress = saved.progress;
+    if (saved.profession) state.profession = saved.profession;
+} catch(e) {}
+
+function saveState() {
+    localStorage.setItem('voyaverse_vr', JSON.stringify({
+        profession: state.profession,
+        progress: state.progress
+    }));
+}
+
+// ══════════════════════════════════════════
+// ENTRY FLOW
+// ══════════════════════════════════════════
+function enterWorld() {
+    document.getElementById('splash').style.display = 'none';
+    if (state.profession) {
+        startVR();
+    } else {
+        document.getElementById('profScreen').classList.add('active');
+    }
+}
+
+function selectProf(prof, card) {
+    document.querySelectorAll('.prof-card2').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.profession = prof;
+    document.getElementById('profContinue').disabled = false;
+}
+
+function startVR() {
+    document.getElementById('profScreen').classList.remove('active');
+    document.getElementById('vrScene').style.display = 'block';
+    document.getElementById('hud').classList.add('active');
+    updateProgressBar();
+    initNPCProximity();
+}
+
+// ══════════════════════════════════════════
+// PROGRESS BAR
+// ══════════════════════════════════════════
+function updateProgressBar() {
+    const bar = document.getElementById('progressBar');
+    const all = [
+        ...Object.keys(state.progress.conv),
+        ...Object.keys(state.progress.listen),
+        ...Object.keys(state.progress.speak)
+    ];
+    bar.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'prog-dot' + (i < all.length ? ' done' : '');
+        bar.appendChild(dot);
+    }
+    // Update badges
+    const cd = Object.keys(state.progress.conv).length;
+    const ld = Object.keys(state.progress.listen).length;
+    const sd = Object.keys(state.progress.speak).length;
+    const cb = document.getElementById('convBadge');
+    const lb = document.getElementById('listenBadge');
+    const sb = document.getElementById('speakBadge');
+    if (cb) { cb.textContent = cd+'/3'; cb.className = 'mi-badge'+(cd===3?' done':''); }
+    if (lb) { lb.textContent = ld+'/3'; lb.className = 'mi-badge'+(ld===3?' done':''); }
+    if (sb) { sb.textContent = sd+'/3'; sb.className = 'mi-badge'+(sd===3?' done':''); }
+}
+
+// ══════════════════════════════════════════
+// NPC PROXIMITY (keyboard E + gaze click)
+// ══════════════════════════════════════════
+function initNPCProximity() {
+    const cam = document.getElementById('camera');
+    const npcs = document.querySelectorAll('.npc-trigger');
+
+    // Keyboard E interaction
+    document.addEventListener('keydown', e => {
+        if (e.key === 'e' || e.key === 'E') {
+            if (state.nearNPC) interactNPC(state.nearNPC);
         }
+    });
 
-        function save() {
-            localStorage.setItem('voyaverse', JSON.stringify({
-                profession: state.profession,
-                progress: state.progress
-            }));
-        }
+    // Click interaction on NPCs
+    npcs.forEach(npc => {
+        npc.addEventListener('click', () => interactNPC(npc));
+    });
 
-        // Navigation
-        function goto(screen) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screen).classList.add('active');
-            
-            if (screen === 'dashboard') updateDashboard();
-            if (screen === 'conversations') renderConvList();
-            if (screen === 'listening') renderListenList();
-            if (screen === 'speaking') renderSpeakList();
-        }
+    // Proximity check every 500ms
+    setInterval(() => {
+        if (!document.getElementById('vrScene').style.display || document.getElementById('vrScene').style.display === 'none') return;
+        const rigPos = document.getElementById('rig').getAttribute('position');
+        if (!rigPos) return;
+        let closest = null, minDist = 6;
+        npcs.forEach(npc => {
+            const p = npc.getAttribute('position');
+            if (!p) return;
+            const dx = rigPos.x - p.x, dz = rigPos.z - p.z;
+            const d = Math.sqrt(dx*dx + dz*dz);
+            if (d < minDist) { minDist = d; closest = npc; }
+        });
+        const prompt = document.getElementById('npcPrompt');
+        if (closest) {
+            state.nearNPC = closest;
+            prompt.classList.add('active');
 
-        // Profession
-        function selectProf(prof, card) {
-            document.querySelectorAll('.prof-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            state.profession = prof;
-            document.getElementById('continueBtn').disabled = false;
+            // Update location label
+            const name = closest.querySelector('a-text')?.getAttribute('value')?.split('\n')[0] || '';
+            document.getElementById('locText').textContent =
+                minDist < 3 ? name + ' (Nearby)' : 'Temple District';
+        } else {
+            state.nearNPC = null;
+            prompt.classList.remove('active');
         }
+    }, 400);
+}
 
-        // Dashboard
-        function updateDashboard() {
-            const convDone = Object.keys(state.progress.conv).length;
-            const listenDone = Object.keys(state.progress.listen).length;
-            const speakDone = Object.keys(state.progress.speak).length;
-            const total = convDone + listenDone + speakDone;
-            
-            document.getElementById('progressNum').textContent = Math.round((total/9)*100) + '%';
-            document.getElementById('convProgress').textContent = `${convDone}/3 completed`;
-            document.getElementById('listenProgress').textContent = `${listenDone}/3 completed`;
-            document.getElementById('speakProgress').textContent = `${speakDone}/3 completed`;
-            
-            const profNames = {
-                business: 'Business Professional',
-                student: 'International Student',
-                tourist: 'Tourist',
-                expat: 'Expat'
-            };
-            document.getElementById('greeting').textContent = 
-                `Welcome, ${profNames[state.profession] || 'Traveler'}`;
-        }
+function interactNPC(npc) {
+    const type = npc.getAttribute('data-npc');
+    const id = parseInt(npc.getAttribute('data-id'));
+    if (type === 'conv') startConversation(id);
+    else if (type === 'listen') openExercises('listen');
+    else if (type === 'speak') openExercises('speak');
+}
 
-        // Conversations
-        function renderConvList() {
-            const html = CONVERSATIONS.map(c => {
-                const done = state.progress.conv[c.id];
-                return `
-                    <div class="exercise-item ${done?'completed':''}" onclick="startConv(${c.id})">
-                        <div class="exercise-num">${done?'✓':c.id}</div>
-                        <div>
-                            <h4>${c.title}</h4>
-                            <p style="font-size: 13px; color: #666;">${c.subtitle}</p>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            document.getElementById('convList').innerHTML = html;
-        }
+// ══════════════════════════════════════════
+// MODULE / EXERCISE SCREENS
+// ══════════════════════════════════════════
+function openModuleScreen() {
+    updateProgressBar();
+    document.getElementById('moduleScreen').classList.add('active');
+}
+function closeModuleScreen() {
+    document.getElementById('moduleScreen').classList.remove('active');
+}
 
-        function startConv(id) {
-            const conv = CONVERSATIONS.find(c => c.id === id);
-            state.currentConv = conv;
-            state.currentTurn = 0;
-            
-            document.getElementById('convTitle').textContent = conv.title;
-            document.getElementById('context').textContent = conv.subtitle;
-            document.getElementById('chat').innerHTML = '';
-            document.getElementById('tipsBox').classList.add('hidden');
-            
-            goto('conv-active');
-            renderTurn();
-        }
+let currentModule = null;
+function openExercises(type) {
+    currentModule = type;
+    closeModuleScreen();
+    const screen = document.getElementById('exerciseScreen');
+    const list = document.getElementById('exerciseList');
+    const title = document.getElementById('exerciseTitle');
 
-        function renderTurn() {
-            const conv = state.currentConv;
-            const turn = conv.turns[state.currentTurn];
-            
-            if (!turn) {
-                completeConv();
-                return;
-            }
-            
-            document.getElementById('turnNum').textContent = 
-                `Turn ${state.currentTurn+1}/${conv.turns.length}`;
-            
-            // Add NPC message
-            const chat = document.getElementById('chat');
-            const msg = document.createElement('div');
-            msg.className = 'message npc';
-            msg.innerHTML = `
-                <div class="msg-label">${turn.speaker}</div>
-                ${turn.jp ? '<div class="msg-jp">' + turn.jp + '</div>' : ''}
-                <div class="msg-en">${turn.en}</div>
-            `;
-            chat.appendChild(msg);
-            
-            // Speak Japanese
-            if (turn.jp) speak(turn.jp);
-            
-            // Render options
-            const opts = document.getElementById('convOptions');
-            opts.innerHTML = turn.options.map((opt, i) => `
-                <div class="option" onclick="selectOpt(${i})">
-                    <div class="option-text">${opt.text}</div>
-                    ${opt.jp ? '<div class="option-jp">' + opt.jp + '</div>' : ''}
-                    <div class="feedback">${opt.feedback}</div>
-                </div>
-            `).join('');
-        }
+    let items, data;
+    if (type === 'conv') { items = CONVERSATIONS; title.textContent = '💬 Conversation Scenarios'; }
+    else if (type === 'listen') { items = LISTENING; title.textContent = '🎧 Listening Exercises'; }
+    else { items = SPEAKING; title.textContent = '🎤 Speaking Practice'; }
 
-        function selectOpt(i) {
-            const turn = state.currentConv.turns[state.currentTurn];
-            const opt = turn.options[i];
-            const opts = document.querySelectorAll('#convOptions .option');
-            
-            opts.forEach(o => o.style.pointerEvents = 'none');
-            opts[i].classList.add('selected-' + opt.result);
-            
-            // Show correct if wrong
-            if (opt.result !== 'correct') {
-                turn.options.forEach((o, idx) => {
-                    if (o.result === 'correct') {
-                        opts[idx].classList.add('selected-correct');
-                    }
-                });
-            }
-            
-            // Add user message
-            const chat = document.getElementById('chat');
-            const msg = document.createElement('div');
-            msg.className = 'message user ' + opt.result;
-            msg.innerHTML = `
-                <div class="msg-label">You</div>
-                <div>${opt.text}</div>
-            `;
-            chat.appendChild(msg);
-            
-            // Next turn
-            setTimeout(() => {
-                state.currentTurn++;
-                renderTurn();
-            }, 2000);
-        }
+    list.innerHTML = items.map(item => {
+        const done = state.progress[type][item.id];
+        return `<div class="ex-item ${done?'completed':''}" onclick="startExercise('${type}',${item.id})">
+            <div class="ex-num">${done?'✓':item.id}</div>
+            <div>
+                <h4 style="color:#fff;margin-bottom:4px">${item.title}</h4>
+                <p style="color:rgba(255,255,255,.5);font-size:13px">${item.subtitle||item.prompt||''}</p>
+            </div>
+        </div>`;
+    }).join('');
 
-        function completeConv() {
-            const conv = state.currentConv;
-            state.progress.conv[conv.id] = true;
-            save();
-            
-            document.getElementById('tipsBox').classList.remove('hidden');
-            document.getElementById('tipsList').innerHTML = 
-                conv.tips.map(t => '<li>' + t + '</li>').join('');
-            
-            document.getElementById('convOptions').innerHTML = `
-                <div class="text-center" style="padding: 20px;">
-                    <h3 style="color: #22c55e;">🎉 Completed!</h3>
-                    <button class="btn btn-primary mt-20" onclick="exitConv()">
-                        Back to Scenarios
-                    </button>
-                </div>
-            `;
-            
-            toast('Scenario completed! 🎌');
-        }
+    screen.classList.add('active');
+}
 
-        function exitConv() {
-            state.currentConv = null;
-            state.currentTurn = 0;
-            goto('conversations');
-        }
+function startExercise(type, id) {
+    document.getElementById('exerciseScreen').classList.remove('active');
+    if (type === 'conv') startConversation(id);
+    else if (type === 'listen') startListening(id);
+    else startSpeaking(id);
+}
 
-        // Listening
-        function renderListenList() {
-            const html = LISTENING.map(l => {
-                const done = state.progress.listen[l.id];
-                return `
-                    <div class="exercise-item ${done?'completed':''}" onclick="startListen(${l.id})">
-                        <div class="exercise-num">${done?'✓':l.id}</div>
-                        <div>
-                            <h4>${l.title}</h4>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            document.getElementById('listenList').innerHTML = html;
-        }
+// ══════════════════════════════════════════
+// CONVERSATION
+// ══════════════════════════════════════════
+function startConversation(id) {
+    const conv = CONVERSATIONS.find(c => c.id === id);
+    state.mode = 'conv';
+    state.current = conv;
+    state.currentTurn = 0;
 
-        function startListen(id) {
-            const ex = LISTENING.find(l => l.id === id);
-            state.currentListen = ex;
-            state.listenAnswers = {};
-            
-            document.getElementById('listenTitle').textContent = ex.title;
-            document.getElementById('transcriptJP').textContent = ex.jp;
-            document.getElementById('transcriptEN').textContent = ex.en;
-            document.getElementById('transcript').classList.add('hidden');
-            document.getElementById('results').classList.add('hidden');
-            document.getElementById('submitBtn').style.display = '';
-            document.getElementById('submitBtn').disabled = true;
-            
-            const html = ex.questions.map((q, qi) => `
-                <div class="question">
-                    <h4>Q${qi+1}: ${q.q}</h4>
-                    ${q.opts.map((opt, oi) => `
-                        <div class="q-option" onclick="selectAnswer(${qi},${oi})">
-                            <div class="radio"></div>
-                            <span>${opt}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
-            document.getElementById('questions').innerHTML = html;
-            
-            goto('listen-active');
-        }
+    document.getElementById('dialogAvatar').textContent = conv.avatar;
+    document.getElementById('dialogName').textContent = conv.npcName;
+    document.getElementById('dialogRole').textContent = conv.npcRole;
 
-        function selectAnswer(qi, oi) {
-            const ex = state.currentListen;
-            document.querySelectorAll('#questions .question:nth-child(' + (qi+1) + ') .q-option')
-                .forEach(o => o.classList.remove('selected'));
-            document.querySelectorAll('#questions .question:nth-child(' + (qi+1) + ') .q-option')[oi]
-                .classList.add('selected');
-            
-            state.listenAnswers[qi] = oi;
-            
-            const allAnswered = ex.questions.every((_, i) => state.listenAnswers[i] !== undefined);
-            document.getElementById('submitBtn').disabled = !allAnswered;
-        }
+    showSection('convSection');
+    document.getElementById('tipCard').classList.add('hidden');
+    openDialog();
+    renderTurn();
+}
 
-        function playAudio() {
-            speak(state.currentListen.jp);
-        }
+function renderTurn() {
+    const conv = state.current;
+    const turn = conv.turns[state.currentTurn];
+    if (!turn) { completeConversation(); return; }
 
-        function toggleTranscript() {
-            const t = document.getElementById('transcript');
-            t.classList.toggle('hidden');
-        }
+    document.getElementById('dialogJP').textContent = turn.jp || '';
+    document.getElementById('dialogEN').textContent = turn.en;
 
-        function submitListen() {
-            const ex = state.currentListen;
-            let correct = 0;
-            
-            ex.questions.forEach((q, qi) => {
-                const userAns = state.listenAnswers[qi];
-                const opts = document.querySelectorAll('#questions .question:nth-child(' + (qi+1) + ') .q-option');
-                opts.forEach((o, oi) => {
-                    o.style.pointerEvents = 'none';
-                    if (oi === q.ans) o.classList.add('correct');
-                    else if (oi === userAns) o.classList.add('incorrect');
-                });
-                if (userAns === q.ans) correct++;
-            });
-            
-            const score = Math.round((correct/ex.questions.length)*100);
-            document.getElementById('score').textContent = 'Score: ' + correct + '/' + ex.questions.length + ' (' + score + '%)';
-            document.getElementById('score').style.color = score>=75 ? '#22c55e' : score>=50 ? '#f59e0b' : '#ef4444';
-            
-            let msg = '';
-            if (score===100) msg = '🎉 Perfect!';
-            else if (score>=75) msg = '👏 Great job!';
-            else if (score>=50) msg = '📚 Good effort!';
-            else msg = '💪 Keep practicing!';
-            document.getElementById('resultMsg').textContent = msg;
-            
-            document.getElementById('results').classList.remove('hidden');
-            document.getElementById('submitBtn').style.display = 'none';
-            
-            if (score >= 50) {
-                state.progress.listen[ex.id] = true;
-                save();
-                toast('Listening completed! 🎧');
-            }
-        }
+    const list = document.getElementById('choiceList');
+    list.innerHTML = turn.options.map((opt, i) =>
+        `<div class="choice" onclick="selectChoice(${i})">
+            <div>${opt.text}</div>
+            <div class="choice-feedback">${opt.feedback}</div>
+        </div>`
+    ).join('');
 
-        function exitListen() {
-            state.currentListen = null;
-            goto('listening');
-        }
+    if (turn.jp) speakText(turn.jp);
+}
 
-        // Speaking
-        function renderSpeakList() {
-            const html = SPEAKING.map(s => {
-                const done = state.progress.speak[s.id];
-                return `
-                    <div class="exercise-item ${done?'completed':''}" onclick="startSpeak(${s.id})">
-                        <div class="exercise-num">${done?'✓':s.id}</div>
-                        <div>
-                            <h4>${s.title}</h4>
-                            <p style="font-size: 13px; color: #666;">${s.subtitle}</p>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            document.getElementById('speakList').innerHTML = html;
-        }
+function selectChoice(i) {
+    const turn = state.current.turns[state.currentTurn];
+    const opt = turn.options[i];
+    const choices = document.querySelectorAll('.choice');
+    choices.forEach(c => c.style.pointerEvents = 'none');
+    choices[i].classList.add(opt.result);
 
-        function startSpeak(id) {
-            const ex = SPEAKING.find(s => s.id === id);
-            state.currentSpeak = ex;
-            
-            document.getElementById('speakTitle').textContent = ex.title;
-            document.getElementById('speakSubtitle').textContent = ex.subtitle;
-            document.getElementById('speakPrompt').textContent = ex.prompt;
-            document.getElementById('speechResult').classList.add('hidden');
-            document.getElementById('modelSection').classList.add('hidden');
-            document.getElementById('micLabel').textContent = 'Tap to Record';
-            document.getElementById('micBtn').classList.remove('recording');
-            
-            goto('speak-active');
-        }
+    if (opt.result !== 'correct') {
+        turn.options.forEach((o, idx) => {
+            if (o.result === 'correct') choices[idx].classList.add('correct');
+        });
+    }
+    if (opt.jp) speakText(opt.jp);
 
-        let recording = false;
-        function toggleRecord() {
-            const btn = document.getElementById('micBtn');
-            const label = document.getElementById('micLabel');
-            
-            if (recording) {
-                recording = false;
-                btn.classList.remove('recording');
-                label.textContent = 'Tap to Record Again';
-                
-                // Simulate speech recognition
-                setTimeout(() => {
-                    const result = document.getElementById('speechResult');
-                    result.classList.remove('hidden');
-                    document.getElementById('speechText').textContent = 
-                        '(Your speech would be transcribed here)';
-                }, 500);
-            } else {
-                recording = true;
-                btn.classList.add('recording');
-                label.textContent = 'Recording...';
-                
-                // Auto-stop after 5 seconds
-                setTimeout(() => {
-                    if (recording) toggleRecord();
-                }, 5000);
-            }
-        }
+    setTimeout(() => {
+        state.currentTurn++;
+        renderTurn();
+    }, 2000);
+}
 
-        function showModel() {
-            const ex = state.currentSpeak;
-            document.getElementById('modelSection').classList.remove('hidden');
-            document.getElementById('modelJP').textContent = ex.modelJP;
-            document.getElementById('modelEN').textContent = ex.modelEN;
-            speak(ex.modelJP);
-        }
+function completeConversation() {
+    const conv = state.current;
+    state.progress.conv[conv.id] = true;
+    saveState();
+    updateProgressBar();
 
-        function completeSpeak() {
-            state.progress.speak[state.currentSpeak.id] = true;
-            save();
-            toast('Speaking completed! 🎤');
-            exitSpeak();
-        }
+    const tipCard = document.getElementById('tipCard');
+    tipCard.classList.remove('hidden');
+    document.getElementById('tipList').innerHTML = conv.tips.map(t => `<li>${t}</li>`).join('');
+    document.getElementById('choiceList').innerHTML =
+        `<button class="btn-vr btn-green" onclick="closeDialog()" style="width:100%;margin-top:10px">🎉 Completed! Back to World</button>`;
+    toast('Scenario complete! 🎌 +1 Progress');
+}
 
-        function exitSpeak() {
-            recording = false;
-            state.currentSpeak = null;
-            goto('speaking');
-        }
+// ══════════════════════════════════════════
+// LISTENING
+// ══════════════════════════════════════════
+function startListening(id) {
+    const ex = LISTENING.find(l => l.id === id);
+    const npcData = NPC_LISTEN_DATA.find(n => n.id === id);
+    state.mode = 'listen';
+    state.current = ex;
+    state.listenAnswers = {};
 
-        // Text-to-Speech
-        function speak(text) {
-            if (!window.speechSynthesis) return;
-            window.speechSynthesis.cancel(); // Cancel any ongoing speech to avoid queued delays
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ja-JP';
-            utterance.rate = 0.8;
-            window.speechSynthesis.speak(utterance);
-        }
+    document.getElementById('dialogAvatar').textContent = npcData.npc.avatar;
+    document.getElementById('dialogName').textContent = npcData.npc.name;
+    document.getElementById('dialogRole').textContent = npcData.npc.role;
 
-        // Toast
-        let toastTimeout;
-        function toast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.style.display = 'block';
-            
-            if (toastTimeout) {
-                clearTimeout(toastTimeout);
-            }
-            toastTimeout = setTimeout(() => t.style.display = 'none', 3000);
-        }
-    </script>
+    document.getElementById('tJP').textContent = ex.jp;
+    document.getElementById('tEN').textContent = ex.en;
+    document.getElementById('transcriptBox').classList.remove('show');
+
+    const scorePanel = document.getElementById('scorePanel');
+    scorePanel.classList.remove('active');
+    document.getElementById('submitListenBtn').disabled = true;
+
+    // Build questions
+    document.getElementById('qContainer').innerHTML = ex.questions.map((q, qi) =>
+        `<div class="q-block">
+            <p>Q${qi+1}: ${q.q}</p>
+            ${q.opts.map((opt, oi) =>
+                `<div class="q-opt" onclick="selectAnswer(${qi},${oi})">
+                    <div class="q-radio"></div>
+                    <span>${opt}</span>
+                </div>`
+            ).join('')}
+        </div>`
+    ).join('');
+
+    showSection('listenSection');
+    openDialog();
+}
+
+function playListenAudio() {
+    if (state.current && state.current.jp) speakText(state.current.jp);
+}
+
+function toggleTranscript() {
+    document.getElementById('transcriptBox').classList.toggle('show');
+}
+
+function selectAnswer(qi, oi) {
+    document.querySelectorAll(`#qContainer .q-block:nth-child(${qi+1}) .q-opt`)
+        .forEach(o => o.classList.remove('selected'));
+    document.querySelectorAll(`#qContainer .q-block:nth-child(${qi+1}) .q-opt`)[oi]
+        .classList.add('selected');
+    state.listenAnswers[qi] = oi;
+
+    const total = state.current.questions.length;
+    const answered = Object.keys(state.listenAnswers).length;
+    document.getElementById('submitListenBtn').disabled = answered < total;
+}
+
+function submitListening() {
+    const ex = state.current;
+    let correct = 0;
+    ex.questions.forEach((q, qi) => {
+        const ua = state.listenAnswers[qi];
+        const opts = document.querySelectorAll(`#qContainer .q-block:nth-child(${qi+1}) .q-opt`);
+        opts.forEach((o, oi) => {
+            o.style.pointerEvents = 'none';
+            if (oi === q.ans) o.classList.add('correct');
+            else if (oi === ua) o.classList.add('wrong');
+        });
+        if (ua === q.ans) correct++;
+    });
+
+    const pct = Math.round((correct / ex.questions.length) * 100);
+    const scoreEl = document.getElementById('scoreText');
+    scoreEl.textContent = `${correct}/${ex.questions.length} Correct (${pct}%)`;
+    scoreEl.style.color = pct>=75?'#6bcb77':pct>=50?'#ffd93d':'#ff6b6b';
+
+    let msg = '';
+    if (pct===100) msg='🎉 Perfect listening!';
+    else if (pct>=75) msg='👏 Great job!';
+    else if (pct>=50) msg='📚 Good effort!';
+    else msg='💪 Keep practicing!';
+    document.getElementById('scoreMsg').textContent = msg;
+    document.getElementById('scorePanel').classList.add('active');
+    document.getElementById('submitListenBtn').style.display='none';
+
+    if (pct >= 50) {
+        state.progress.listen[ex.id] = true;
+        saveState();
+        updateProgressBar();
+        toast('Listening complete! 🎧 +1 Progress');
+    }
+}
+
+// ══════════════════════════════════════════
+// SPEAKING
+// ══════════════════════════════════════════
+function startSpeaking(id) {
+    const ex = SPEAKING.find(s => s.id === id);
+    const npcData = NPC_SPEAK_DATA.find(n => n.id === id);
+    state.mode = 'speak';
+    state.current = ex;
+    state.recording = false;
+
+    document.getElementById('dialogAvatar').textContent = npcData.npc.avatar;
+    document.getElementById('dialogName').textContent = npcData.npc.name;
+    document.getElementById('dialogRole').textContent = npcData.npc.role;
+
+    document.getElementById('speakSubTitle').textContent = ex.subtitle;
+    document.getElementById('speakPromptText').textContent = ex.prompt;
+    document.getElementById('speechResultBox').style.display = 'none';
+    document.getElementById('modelAnswerBox').classList.remove('show');
+    document.getElementById('micBtn2').classList.remove('recording');
+    document.getElementById('micLabel2').textContent = 'Tap to Record';
+
+    showSection('speakSection');
+    openDialog();
+}
+
+function toggleRecord() {
+    const btn = document.getElementById('micBtn2');
+    const label = document.getElementById('micLabel2');
+    if (state.recording) {
+        state.recording = false;
+        btn.classList.remove('recording');
+        label.textContent = 'Tap to Record Again';
+        setTimeout(() => {
+            document.getElementById('speechResultBox').style.display = 'block';
+            document.getElementById('speechResultText').textContent = '(Your speech would appear here — connect a microphone)';
+        }, 600);
+    } else {
+        state.recording = true;
+        btn.classList.add('recording');
+        label.textContent = '🔴 Recording... (5s)';
+        setTimeout(() => { if (state.recording) toggleRecord(); }, 5000);
+    }
+}
+
+function showModelAnswer() {
+    const ex = state.current;
+    document.getElementById('modelJP2').textContent = ex.modelJP;
+    document.getElementById('modelEN2').textContent = ex.modelEN;
+    document.getElementById('modelAnswerBox').classList.add('show');
+    speakText(ex.modelJP);
+}
+
+function completeSpeaking() {
+    state.progress.speak[state.current.id] = true;
+    saveState();
+    updateProgressBar();
+    toast('Speaking complete! 🎤 +1 Progress');
+    closeDialog();
+}
+
+// ══════════════════════════════════════════
+// DIALOG UI HELPERS
+// ══════════════════════════════════════════
+function showSection(id) {
+    ['convSection','listenSection','speakSection'].forEach(s => {
+        document.getElementById(s).style.display = s === id ? 'block' : 'none';
+    });
+}
+
+function openDialog() {
+    document.getElementById('dialog').classList.add('active');
+}
+
+function closeDialog() {
+    document.getElementById('dialog').classList.remove('active');
+    state.recording = false;
+    document.getElementById('micBtn2')?.classList.remove('recording');
+}
+
+function speakCurrentDialog() {
+    const jp = document.getElementById('dialogJP').textContent;
+    if (jp) speakText(jp);
+}
+
+// ══════════════════════════════════════════
+// SPEECH SYNTHESIS
+// ══════════════════════════════════════════
+function speakText(text) {
+    if (!window.speechSynthesis || !text) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+}
+
+// ══════════════════════════════════════════
+// VR MODE
+// ══════════════════════════════════════════
+function toggleVRMode() {
+    const scene = document.querySelector('a-scene');
+    if (scene && scene.is('vr-mode')) {
+        scene.exitVR();
+    } else if (scene) {
+        scene.enterVR();
+    }
+}
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+let toastTO;
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(toastTO);
+    toastTO = setTimeout(() => t.style.display = 'none', 3500);
+}
+
+// ══════════════════════════════════════════
+// GROUND TILES (procedural)
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    const tiles = document.getElementById('groundTiles');
+    // Add a few decorative rocks/bushes
+    const greens = [[-6,0,-15],[7,0,-8],[3,0,-20],[-9,0,-5],[11,0,-20]];
+    greens.forEach(([x,y,z]) => {
+        const el = document.createElement('a-sphere');
+        el.setAttribute('position', `${x} 0.4 ${z}`);
+        el.setAttribute('radius', '0.6');
+        el.setAttribute('color', '#2d6a2d');
+        el.setAttribute('roughness', '0.9');
+        tiles.appendChild(el);
+    });
+});
+</script>
 </body>
 </html>
