@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoyaVerse - Japan Cultural Training</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            color: #1a1a1a;
+        }
+
+        .screen { display: none; min-height: 100vh; }
+        .screen.active { display: block; }
+
+        /* Welcome Screen */
+        #welcome { 
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d1b3d 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #welcome.active { display: flex; }
+        
+        .welcome-card {
+            background: rgba(255,255,255,0.95);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .logo { font-size: 48px; margin-bottom: 10px; }
+        h1 { color: #c41e3a; font-size: 32px; margin-bottom: 10px; }
+        .tagline { color: #666; margin-bottom: 30px; }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #c41e3a;
+            color: white;
+        }
+        .btn-primary:hover { background: #9b1830; transform: translateY(-2px); }
+        .btn-secondary {
+            background: white;
+            color: #1a1a1a;
+            border: 2px solid #ddd;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Top Navigation */
+        .nav {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-title { font-weight: 600; font-size: 18px; }
+        .back-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+        }
+
+        /* Container */
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Profession Cards */
+        .prof-grid {
+            display: grid;
+            gap: 15px;
+            margin: 30px 0;
+        }
+        .prof-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .prof-card:hover { border-color: #c41e3a; transform: translateY(-2px); }
+        .prof-card.selected { border-color: #c41e3a; background: #fff5f7; }
+        .prof-icon { font-size: 32px; margin-bottom: 10px; }
+        .prof-card h3 { font-size: 18px; margin-bottom: 5px; }
+        .prof-card p { font-size: 14px; color: #666; }
+
+        /* Dashboard */
+        .progress-ring {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .progress-num {
+            font-size: 48px;
+            font-weight: 700;
+            color: #c41e3a;
+        }
+
+        .module-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .module-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+        .module-card:hover { border-color: #c41e3a; transform: translateX(5px); }
+        .module-icon {
+            font-size: 40px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: #f0f0f0;
+        }
+        .module-info { flex: 1; }
+        .module-info h3 { font-size: 16px; margin-bottom: 5px; }
+        .module-info p { font-size: 13px; color: #666; }
+
+        /* Exercise List */
+        .exercise-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .exercise-item {
+            background: white;
+            padding: 18px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .exercise-item:hover { border-color: #c41e3a; }
+        .exercise-item.completed { border-left: 4px solid #22c55e; }
+        .exercise-num {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .exercise-item.completed .exercise-num { background: #dcfce7; color: #22c55e; }
+
+        /* Conversation */
+        .context-box {
+            background: #eef2ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #c7d2fe;
+        }
+        .chat {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 10px;
+        }
+        .message.npc {
+            background: white;
+            border: 1px solid #ddd;
+            align-self: flex-start;
+        }
+        .message.user {
+            background: #c41e3a;
+            color: white;
+            align-self: flex-end;
+        }
+        .message.correct { background: #22c55e; }
+        .message.incorrect { background: #ef4444; }
+        .message.partial { background: #f59e0b; }
+        .msg-label { font-size: 11px; font-weight: 600; opacity: 0.7; margin-bottom: 4px; }
+        .msg-jp { font-size: 15px; margin-bottom: 4px; }
+        .msg-en { font-size: 12px; opacity: 0.8; font-style: italic; }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .option {
+            background: white;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        .option:hover { border-color: #c41e3a; background: #fff5f7; }
+        .option.selected-correct { border-color: #22c55e; background: #dcfce7; }
+        .option.selected-incorrect { border-color: #ef4444; background: #fee2e2; }
+        .option.selected-partial { border-color: #f59e0b; background: #fef3c7; }
+        .option-text { font-size: 14px; }
+        .option-jp { font-size: 12px; color: #666; margin-top: 4px; }
+        .feedback { 
+            display: none; 
+            font-size: 12px; 
+            font-weight: 600; 
+            margin-top: 8px; 
+        }
+        .option.selected-correct .feedback,
+        .option.selected-incorrect .feedback,
+        .option.selected-partial .feedback {
+            display: block;
+        }
+
+        .tips-box {
+            background: #fff7ed;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #fed7aa;
+            margin-top: 20px;
+        }
+        .tips-box h4 { margin-bottom: 10px; }
+        .tips-box ul { list-style: none; }
+        .tips-box li { 
+            padding: 5px 0; 
+            padding-left: 20px; 
+            position: relative; 
+        }
+        .tips-box li:before { 
+            content: "•"; 
+            position: absolute; 
+            left: 0; 
+            color: #d4a843; 
+            font-weight: bold; 
+        }
+
+        /* Audio Player */
+        .audio-player {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .play-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #c41e3a;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-btn:hover { background: #9b1830; transform: scale(1.1); }
+
+        /* Questions */
+        .question {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+        .question h4 { margin-bottom: 12px; }
+        .q-option {
+            padding: 10px 15px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .q-option:hover { border-color: #c41e3a; background: #fff5f7; }
+        .q-option.selected { border-color: #c41e3a; background: #fff5f7; }
+        .q-option.correct { border-color: #22c55e; background: #dcfce7; }
+        .q-option.incorrect { border-color: #ef4444; background: #fee2e2; }
+        .radio {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            position: relative;
+        }
+        .q-option.selected .radio:after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #c41e3a;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+        }
+
+        /* Speaking */
+        .mic-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #c41e3a;
+            background: white;
+            color: #c41e3a;
+            font-size: 32px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mic-btn:hover { background: #fff5f7; }
+        .mic-btn.recording { background: #c41e3a; color: white; }
+
+        .model-answer {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .model-jp { font-size: 16px; margin-bottom: 8px; }
+        .model-en { font-size: 14px; color: #666; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+        }
+
+        /* Utility */
+        .text-center { text-align: center; }
+        .mt-20 { margin-top: 20px; }
+        .mb-20 { margin-bottom: 20px; }
+        .hidden { display: none; }
+
+        @media (max-width: 600px) {
+            .welcome-card { padding: 30px 20px; }
+            h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Screen -->
+    <div id="welcome" class="screen active">
+        <div class="welcome-card">
+            <div class="logo">🌏</div>
+            <h1>VoyaVerse</h1>
+            <p class="tagline">Cultural Readiness Platform</p>
+            <h2 style="margin: 20px 0;">Prepare for Japan</h2>
+            <p style="margin-bottom: 30px; color: #666;">
+                Master Japanese language and culture through interactive scenarios, 
+                listening exercises, and speaking practice.
+            </p>
+            <button class="btn btn-primary" onclick="goto('profession')">Get Started</button>
+        </div>
+    </div>
+
+    <!-- Profession Selection -->
+    <div id="profession" class="screen">
+        <div class="container">
+            <h2 class="text-center">Select Your Profession</h2>
+            <p class="text-center" style="color: #666; margin-bottom: 20px;">
+                We'll customize your training based on your needs
+            </p>
+            <div class="prof-grid">
+                <div class="prof-card" onclick="selectProf('business', this)">
+                    <div class="prof-icon">💼</div>
+                    <h3>Business Professional</h3>
+                    <p>Meetings, networking, corporate etiquette</p>
+                </div>
+                <div class="prof-card" onclick="selectProf('student', this)">
+                    <div class="prof-icon">🎓</div>
+                    <h3>International Student</h3>
+                    <p>University life, academic settings</p>
+                </div>
+                <div class="prof-card" onclick="selectProf('tourist', this)">
+                    <div class="prof-icon">📸</div>
+                    <h3>Tourist</h3>
+                    <p>Sightseeing, dining, transportation</p>
+                </div>
+                <div class="prof-card" onclick="selectProf('expat', this)">
+                    <div class="prof-icon">🏠</div>
+                    <h3>Expat</h3>
+                    <p>Daily life, settling in</p>
+                </div>
+            </div>
+            <div class="text-center mt-20">
+                <button class="btn btn-primary" id="continueBtn" disabled onclick="goto('dashboard')">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="screen">
+        <div class="nav">
+            <div class="nav-title">🌏 VoyaVerse</div>
+            <div>🇯🇵 Japan</div>
+        </div>
+        <div class="container">
+            <h2 id="greeting">Welcome</h2>
+            <div class="progress-ring">
+                <div class="progress-num" id="progressNum">0%</div>
+                <p style="color: #666;">Overall Progress</p>
+            </div>
+            <div class="module-grid">
+                <div class="module-card" onclick="goto('conversations')">
+                    <div class="module-icon">💬</div>
+                    <div class="module-info">
+                        <h3>Conversation Scenarios</h3>
+                        <p id="convProgress">0/3 completed</p>
+                    </div>
+                </div>
+                <div class="module-card" onclick="goto('listening')">
+                    <div class="module-icon">🎧</div>
+                    <div class="module-info">
+                        <h3>Listening Exercises</h3>
+                        <p id="listenProgress">0/3 completed</p>
+                    </div>
+                </div>
+                <div class="module-card" onclick="goto('speaking')">
+                    <div class="module-icon">🎤</div>
+                    <div class="module-info">
+                        <h3>Speaking Exercises</h3>
+                        <p id="speakProgress">0/3 completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation List -->
+    <div id="conversations" class="screen">
+        <div class="nav">
+            <button class="back-btn" onclick="goto('dashboard')">←</button>
+            <div class="nav-title">Conversation Scenarios</div>
+            <div></div>
+        </div>
+        <div class="container">
+            <div class="exercise-list" id="convList"></div>
+        </div>
+    </div>
+
+    <!-- Active Conversation -->
+    <div id="conv-active" class="screen">
+        <div class="nav">
+            <button class="back-btn" onclick="exitConv()">←</button>
+            <div class="nav-title" id="convTitle">Scenario</div>
+            <div id="turnNum">Turn 1/3</div>
+        </div>
+        <div class="container">
+            <div class="context-box" id="context"></div>
+            <div class="chat" id="chat"></div>
+            <div class="options" id="convOptions"></div>
+            <div class="tips-box hidden" id="tipsBox">
+                <h4>🏮 Cultural Tips</h4>
+                <ul id="tipsList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Listening List -->
+    <div id="listening" class="screen">
+        <div class="nav">
+            <button class="back-btn" onclick="goto('dashboard')">←</button>
+            <div class="nav-title">Listening Exercises</div>
+            <div></div>
+        </div>
+        <div class="container">
+            <div class="exercise-list" id="listenList"></div>
+        </div>
+    </div>
+
+    <!-- Active Listening -->
+    <div id="listen-active" class="screen">
+        <div class="nav">
+            <button class="back-btn" onclick="exitListen()">←</button>
+            <div class="nav-title" id="listenTitle">Listening</div>
+            <div></div>
+        </div>
+        <div class="container">
+            <div class="audio-player">
+                <button class="play-btn" onclick="playAudio()">▶</button>
+                <p>Listen to the audio, then answer the questions</p>
+                <button class="btn btn-secondary" onclick="toggleTranscript()" style="margin-top: 10px;">
+                    Show Transcript
+                </button>
+                <div id="transcript" class="hidden" style="margin-top: 15px; text-align: left;">
+                    <p id="transcriptJP" style="margin-bottom: 10px;"></p>
+                    <p id="transcriptEN" style="font-size: 14px; color: #666; font-style: italic;"></p>
+                </div>
+            </div>
+            <div id="questions"></div>
+            <div class="text-center mt-20">
+                <button class="btn btn-primary" id="submitBtn" onclick="submitListen()" disabled>
+                    Submit Answers
+                </button>
+            </div>
+            <div id="results" class="hidden text-center mt-20">
+                <h3 id="score"></h3>
+                <p id="resultMsg"></p>
+                <button class="btn btn-primary mt-20" onclick="exitListen()">
+                    Back to Exercises
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Speaking List -->
+    <div id="speaking" class="screen">
+        <div class="nav">
+            <button class="back-btn" onclick="goto('dashboard')">←</button>
+            <div class="nav-title">Speaking Exercises</div>
+            <div></div>
+        </div>
+        <div class="container">
+            <div class="exercise-list" id="speakList"></div>
+        </div>
+    </div>
+
+    <!-- Active Speaking -->
+    <div id="speak-active" class="screen">
+        <div class="nav">
+            <button class="back-btn" onclick="exitSpeak()">←</button>
+            <div class="nav-title" id="speakTitle">Speaking</div>
+            <div></div>
+        </div>
+        <div class="container">
+            <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h3 id="speakSubtitle"></h3>
+                <p id="speakPrompt" style="color: #666; margin-top: 10px;"></p>
+            </div>
+            <div class="text-center">
+                <button class="mic-btn" id="micBtn" onclick="toggleRecord()">🎤</button>
+                <p id="micLabel">Tap to Record</p>
+            </div>
+            <div id="speechResult" class="hidden" style="background: white; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                <h4>Your Response:</h4>
+                <p id="speechText" style="margin-top: 8px;"></p>
+            </div>
+            <div class="text-center">
+                <button class="btn btn-secondary" onclick="showModel()">Show Model Answer</button>
+            </div>
+            <div id="modelSection" class="hidden mt-20">
+                <h4>Model Answer</h4>
+                <div class="model-answer">
+                    <p class="model-jp" id="modelJP"></p>
+                    <p class="model-en" id="modelEN"></p>
+                </div>
+                <button class="btn btn-primary" onclick="completeSpeak()" style="width: 100%; margin-top: 15px;">
+                    Mark Complete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Data
+        const CONVERSATIONS = [
+            {
+                id: 1,
+                title: "Airport Arrival",
+                subtitle: "Immigration & Customs",
+                turns: [
+                    {
+                        speaker: "Officer",
+                        jp: "パスポートを見せてください。",
+                        en: "Please show me your passport.",
+                        options: [
+                            { text: "Hand over passport with slight bow", result: "correct", feedback: "✅ Polite and respectful" },
+                            { text: "Say 'Here!' loudly", result: "incorrect", feedback: "❌ Too casual and loud" },
+                            { text: "Deep bow and hand passport", result: "partial", feedback: "⚠️ Deep bow unnecessary here" }
+                        ]
+                    },
+                    {
+                        speaker: "Officer",
+                        jp: "日本に何日滞在しますか？",
+                        en: "How long will you stay?",
+                        options: [
+                            { text: '"一週間です" (One week)', jp: "一週間です", result: "correct", feedback: "✅ Clear response" },
+                            { text: '"三ヶ月です" (Three months)', jp: "三ヶ月です", result: "correct", feedback: "✅ Appropriate" },
+                            { text: '"一年です" (One year)', jp: "一年です", result: "correct", feedback: "✅ Good for long stay" }
+                        ]
+                    },
+                    {
+                        speaker: "Officer",
+                        jp: "日本へようこそ。",
+                        en: "Welcome to Japan.",
+                        options: [
+                            { text: '"ありがとうございます" with bow', jp: "ありがとうございます", result: "correct", feedback: "✅ Perfect!" },
+                            { text: '"Thanks!" in English', result: "incorrect", feedback: "❌ Too informal" },
+                            { text: 'Silent bow', result: "partial", feedback: "⚠️ Verbal thanks better" }
+                        ]
+                    }
+                ],
+                tips: [
+                    "Keep documents organized",
+                    "Speak politely and calmly",
+                    "Small bow when receiving passport is appreciated",
+                    "Don't joke with immigration officers"
+                ]
+            },
+            {
+                id: 2,
+                title: "Restaurant Dining",
+                subtitle: "Ordering Food",
+                turns: [
+                    {
+                        speaker: "Server",
+                        jp: "いらっしゃいませ！何名様ですか？",
+                        en: "Welcome! How many people?",
+                        options: [
+                            { text: '"二人です" (Two people)', jp: "二人です", result: "correct", feedback: "✅ Clear" },
+                            { text: '"一人です" (One person)', jp: "一人です", result: "correct", feedback: "✅ Good" },
+                            { text: 'Hold up fingers', result: "partial", feedback: "⚠️ Words are better" }
+                        ]
+                    },
+                    {
+                        speaker: "System",
+                        jp: "",
+                        en: "Server brings wet towel. What do you do?",
+                        options: [
+                            { text: "Wipe hands only, fold neatly", result: "correct", feedback: "✅ Correct etiquette" },
+                            { text: "Wipe face and neck", result: "incorrect", feedback: "❌ Rude in formal settings" },
+                            { text: "Ignore towel", result: "partial", feedback: "⚠️ Better to use it" }
+                        ]
+                    },
+                    {
+                        speaker: "System",
+                        jp: "",
+                        en: "Before eating, what should you say?",
+                        options: [
+                            { text: '"いただきます" (Itadakimasu)', jp: "いただきます", result: "correct", feedback: "✅ Essential phrase!" },
+                            { text: "Start eating silently", result: "incorrect", feedback: "❌ Always say Itadakimasu" },
+                            { text: '"Looks good!" in English', result: "partial", feedback: "⚠️ Say Itadakimasu instead" }
+                        ]
+                    }
+                ],
+                tips: [
+                    'Say "Itadakimasu" before eating',
+                    'Say "Gochisousama" after finishing',
+                    "No tipping in Japan",
+                    "Slurping noodles is OK",
+                    "Don't stick chopsticks upright in rice"
+                ]
+            },
+            {
+                id: 3,
+                title: "Train Travel",
+                subtitle: "Using Public Transit",
+                turns: [
+                    {
+                        speaker: "System",
+                        jp: "",
+                        en: "Train is arriving. What do you do?",
+                        options: [
+                            { text: "Queue in marked lines, let passengers exit first", result: "correct", feedback: "✅ Perfect etiquette" },
+                            { text: "Push forward to get seat", result: "incorrect", feedback: "❌ Very rude" },
+                            { text: "Stand anywhere", result: "partial", feedback: "⚠️ Use queue lines" }
+                        ]
+                    },
+                    {
+                        speaker: "System",
+                        jp: "",
+                        en: "On crowded train, what should you do?",
+                        options: [
+                            { text: "Phone on silent, no talking loudly", result: "correct", feedback: "✅ Good manners" },
+                            { text: "Take phone call normally", result: "incorrect", feedback: "❌ Very rude" },
+                            { text: "Sit in priority seat", result: "incorrect", feedback: "❌ For elderly/pregnant" }
+                        ]
+                    },
+                    {
+                        speaker: "Announcement",
+                        jp: "まもなく渋谷です。",
+                        en: "Arriving at Shibuya soon.",
+                        options: [
+                            { text: "Move toward door calmly", result: "correct", feedback: "✅ Good preparation" },
+                            { text: "Rush and push others", result: "incorrect", feedback: "❌ Never push" },
+                            { text: "Wait until everyone exits", result: "partial", feedback: "⚠️ May miss your stop" }
+                        ]
+                    }
+                ],
+                tips: [
+                    "Trains run exactly on time",
+                    "Keep phone on silent",
+                    "No eating/drinking on local trains",
+                    "Give up priority seats",
+                    "Keep belongings compact"
+                ]
+            }
+        ];
+
+        const LISTENING = [
+            {
+                id: 1,
+                title: "Airport Announcement",
+                jp: "日本航空123便、東京成田行きは、ゲート15番から、午後3時に出発いたします。",
+                en: "JAL Flight 123 to Tokyo Narita departs from Gate 15 at 3:00 PM.",
+                questions: [
+                    { q: "Flight number?", opts: ["123", "321", "213"], ans: 0 },
+                    { q: "Gate number?", opts: ["5", "15", "50"], ans: 1 },
+                    { q: "Departure time?", opts: ["3:00 AM", "3:00 PM", "5:00 PM"], ans: 1 }
+                ]
+            },
+            {
+                id: 2,
+                title: "Restaurant Greeting",
+                jp: "いらっしゃいませ！何名様ですか？こちらへどうぞ。",
+                en: "Welcome! How many people? This way please.",
+                questions: [
+                    { q: "What does server say first?", opts: ["Goodbye", "Welcome", "Thank you"], ans: 1 },
+                    { q: "What does server ask?", opts: ["Your name", "How many people", "Your order"], ans: 1 },
+                    { q: "What does server say last?", opts: ["This way please", "Sit anywhere", "Pay now"], ans: 0 }
+                ]
+            },
+            {
+                id: 3,
+                title: "Weather Report",
+                jp: "明日の東京の天気です。朝は曇り、午後から雨が降るでしょう。",
+                en: "Tomorrow's Tokyo weather: Morning cloudy, afternoon rain.",
+                questions: [
+                    { q: "Morning weather?", opts: ["Sunny", "Cloudy", "Rainy"], ans: 1 },
+                    { q: "Afternoon weather?", opts: ["Sunny", "Cloudy", "Rainy"], ans: 2 },
+                    { q: "Location?", opts: ["Osaka", "Tokyo", "Kyoto"], ans: 1 }
+                ]
+            }
+        ];
+
+        const SPEAKING = [
+            {
+                id: 1,
+                title: "Self Introduction",
+                subtitle: "Introduce yourself",
+                prompt: "Say your name, country, and purpose in Japan",
+                modelJP: "初めまして。[名前]と申します。[国]から来ました。",
+                modelEN: "Nice to meet you. I'm [Name]. I'm from [Country]."
+            },
+            {
+                id: 2,
+                title: "Asking Directions",
+                subtitle: "Find your way",
+                prompt: "Ask how to get to Tokyo Station",
+                modelJP: "すみません。東京駅はどこですか？",
+                modelEN: "Excuse me. Where is Tokyo Station?"
+            },
+            {
+                id: 3,
+                title: "Shopping",
+                subtitle: "Make a purchase",
+                prompt: "Ask the price and say you'll buy it",
+                modelJP: "すみません。これはいくらですか？これをください。",
+                modelEN: "Excuse me. How much is this? I'll take this please."
+            }
+        ];
+
+        // State
+        let state = {
+            profession: null,
+            currentConv: null,
+            currentTurn: 0,
+            currentListen: null,
+            listenAnswers: {},
+            currentSpeak: null,
+            progress: { conv: {}, listen: {}, speak: {} }
+        };
+
+        // Load progress
+        const saved = localStorage.getItem('voyaverse');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                state.profession = data.profession || null;
+                if (data.progress) {
+                    state.progress.conv = data.progress.conv || {};
+                    state.progress.listen = data.progress.listen || {};
+                    state.progress.speak = data.progress.speak || {};
+                }
+                
+                // If the user already selected a profession, we can pre-enable the continue button 
+                // or safely initialize the dashboard state. Let's keep them on welcome but allow easy resume.
+                if (state.profession) {
+                    // Update UI if we were on the profession screen, but since we start on welcome, 
+                    // they can just click 'Get Started' and then they see the active continue button.
+                }
+            } catch (e) {
+                console.error("Failed to parse local storage data:", e);
+            }
+        }
+
+        function save() {
+            localStorage.setItem('voyaverse', JSON.stringify({
+                profession: state.profession,
+                progress: state.progress
+            }));
+        }
+
+        // Navigation
+        function goto(screen) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screen).classList.add('active');
+            
+            if (screen === 'dashboard') updateDashboard();
+            if (screen === 'conversations') renderConvList();
+            if (screen === 'listening') renderListenList();
+            if (screen === 'speaking') renderSpeakList();
+        }
+
+        // Profession
+        function selectProf(prof, card) {
+            document.querySelectorAll('.prof-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            state.profession = prof;
+            document.getElementById('continueBtn').disabled = false;
+        }
+
+        // Dashboard
+        function updateDashboard() {
+            const convDone = Object.keys(state.progress.conv).length;
+            const listenDone = Object.keys(state.progress.listen).length;
+            const speakDone = Object.keys(state.progress.speak).length;
+            const total = convDone + listenDone + speakDone;
+            
+            document.getElementById('progressNum').textContent = Math.round((total/9)*100) + '%';
+            document.getElementById('convProgress').textContent = `${convDone}/3 completed`;
+            document.getElementById('listenProgress').textContent = `${listenDone}/3 completed`;
+            document.getElementById('speakProgress').textContent = `${speakDone}/3 completed`;
+            
+            const profNames = {
+                business: 'Business Professional',
+                student: 'International Student',
+                tourist: 'Tourist',
+                expat: 'Expat'
+            };
+            document.getElementById('greeting').textContent = 
+                `Welcome, ${profNames[state.profession] || 'Traveler'}`;
+        }
+
+        // Conversations
+        function renderConvList() {
+            const html = CONVERSATIONS.map(c => {
+                const done = state.progress.conv[c.id];
+                return `
+                    <div class="exercise-item ${done?'completed':''}" onclick="startConv(${c.id})">
+                        <div class="exercise-num">${done?'✓':c.id}</div>
+                        <div>
+                            <h4>${c.title}</h4>
+                            <p style="font-size: 13px; color: #666;">${c.subtitle}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('convList').innerHTML = html;
+        }
+
+        function startConv(id) {
+            const conv = CONVERSATIONS.find(c => c.id === id);
+            state.currentConv = conv;
+            state.currentTurn = 0;
+            
+            document.getElementById('convTitle').textContent = conv.title;
+            document.getElementById('context').textContent = conv.subtitle;
+            document.getElementById('chat').innerHTML = '';
+            document.getElementById('tipsBox').classList.add('hidden');
+            
+            goto('conv-active');
+            renderTurn();
+        }
+
+        function renderTurn() {
+            const conv = state.currentConv;
+            const turn = conv.turns[state.currentTurn];
+            
+            if (!turn) {
+                completeConv();
+                return;
+            }
+            
+            document.getElementById('turnNum').textContent = 
+                `Turn ${state.currentTurn+1}/${conv.turns.length}`;
+            
+            // Add NPC message
+            const chat = document.getElementById('chat');
+            const msg = document.createElement('div');
+            msg.className = 'message npc';
+            msg.innerHTML = `
+                <div class="msg-label">${turn.speaker}</div>
+                ${turn.jp ? '<div class="msg-jp">' + turn.jp + '</div>' : ''}
+                <div class="msg-en">${turn.en}</div>
+            `;
+            chat.appendChild(msg);
+            
+            // Speak Japanese
+            if (turn.jp) speak(turn.jp);
+            
+            // Render options
+            const opts = document.getElementById('convOptions');
+            opts.innerHTML = turn.options.map((opt, i) => `
+                <div class="option" onclick="selectOpt(${i})">
+                    <div class="option-text">${opt.text}</div>
+                    ${opt.jp ? '<div class="option-jp">' + opt.jp + '</div>' : ''}
+                    <div class="feedback">${opt.feedback}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectOpt(i) {
+            const turn = state.currentConv.turns[state.currentTurn];
+            const opt = turn.options[i];
+            const opts = document.querySelectorAll('#convOptions .option');
+            
+            opts.forEach(o => o.style.pointerEvents = 'none');
+            opts[i].classList.add('selected-' + opt.result);
+            
+            // Show correct if wrong
+            if (opt.result !== 'correct') {
+                turn.options.forEach((o, idx) => {
+                    if (o.result === 'correct') {
+                        opts[idx].classList.add('selected-correct');
+                    }
+                });
+            }
+            
+            // Add user message
+            const chat = document.getElementById('chat');
+            const msg = document.createElement('div');
+            msg.className = 'message user ' + opt.result;
+            msg.innerHTML = `
+                <div class="msg-label">You</div>
+                <div>${opt.text}</div>
+            `;
+            chat.appendChild(msg);
+            
+            // Next turn
+            setTimeout(() => {
+                state.currentTurn++;
+                renderTurn();
+            }, 2000);
+        }
+
+        function completeConv() {
+            const conv = state.currentConv;
+            state.progress.conv[conv.id] = true;
+            save();
+            
+            document.getElementById('tipsBox').classList.remove('hidden');
+            document.getElementById('tipsList').innerHTML = 
+                conv.tips.map(t => '<li>' + t + '</li>').join('');
+            
+            document.getElementById('convOptions').innerHTML = `
+                <div class="text-center" style="padding: 20px;">
+                    <h3 style="color: #22c55e;">🎉 Completed!</h3>
+                    <button class="btn btn-primary mt-20" onclick="exitConv()">
+                        Back to Scenarios
+                    </button>
+                </div>
+            `;
+            
+            toast('Scenario completed! 🎌');
+        }
+
+        function exitConv() {
+            state.currentConv = null;
+            state.currentTurn = 0;
+            goto('conversations');
+        }
+
+        // Listening
+        function renderListenList() {
+            const html = LISTENING.map(l => {
+                const done = state.progress.listen[l.id];
+                return `
+                    <div class="exercise-item ${done?'completed':''}" onclick="startListen(${l.id})">
+                        <div class="exercise-num">${done?'✓':l.id}</div>
+                        <div>
+                            <h4>${l.title}</h4>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('listenList').innerHTML = html;
+        }
+
+        function startListen(id) {
+            const ex = LISTENING.find(l => l.id === id);
+            state.currentListen = ex;
+            state.listenAnswers = {};
+            
+            document.getElementById('listenTitle').textContent = ex.title;
+            document.getElementById('transcriptJP').textContent = ex.jp;
+            document.getElementById('transcriptEN').textContent = ex.en;
+            document.getElementById('transcript').classList.add('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('submitBtn').style.display = '';
+            document.getElementById('submitBtn').disabled = true;
+            
+            const html = ex.questions.map((q, qi) => `
+                <div class="question">
+                    <h4>Q${qi+1}: ${q.q}</h4>
+                    ${q.opts.map((opt, oi) => `
+                        <div class="q-option" onclick="selectAnswer(${qi},${oi})">
+                            <div class="radio"></div>
+                            <span>${opt}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+            document.getElementById('questions').innerHTML = html;
+            
+            goto('listen-active');
+        }
+
+        function selectAnswer(qi, oi) {
+            const ex = state.currentListen;
+            document.querySelectorAll('#questions .question:nth-child(' + (qi+1) + ') .q-option')
+                .forEach(o => o.classList.remove('selected'));
+            document.querySelectorAll('#questions .question:nth-child(' + (qi+1) + ') .q-option')[oi]
+                .classList.add('selected');
+            
+            state.listenAnswers[qi] = oi;
+            
+            const allAnswered = ex.questions.every((_, i) => state.listenAnswers[i] !== undefined);
+            document.getElementById('submitBtn').disabled = !allAnswered;
+        }
+
+        function playAudio() {
+            speak(state.currentListen.jp);
+        }
+
+        function toggleTranscript() {
+            const t = document.getElementById('transcript');
+            t.classList.toggle('hidden');
+        }
+
+        function submitListen() {
+            const ex = state.currentListen;
+            let correct = 0;
+            
+            ex.questions.forEach((q, qi) => {
+                const userAns = state.listenAnswers[qi];
+                const opts = document.querySelectorAll('#questions .question:nth-child(' + (qi+1) + ') .q-option');
+                opts.forEach((o, oi) => {
+                    o.style.pointerEvents = 'none';
+                    if (oi === q.ans) o.classList.add('correct');
+                    else if (oi === userAns) o.classList.add('incorrect');
+                });
+                if (userAns === q.ans) correct++;
+            });
+            
+            const score = Math.round((correct/ex.questions.length)*100);
+            document.getElementById('score').textContent = 'Score: ' + correct + '/' + ex.questions.length + ' (' + score + '%)';
+            document.getElementById('score').style.color = score>=75 ? '#22c55e' : score>=50 ? '#f59e0b' : '#ef4444';
+            
+            let msg = '';
+            if (score===100) msg = '🎉 Perfect!';
+            else if (score>=75) msg = '👏 Great job!';
+            else if (score>=50) msg = '📚 Good effort!';
+            else msg = '💪 Keep practicing!';
+            document.getElementById('resultMsg').textContent = msg;
+            
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('submitBtn').style.display = 'none';
+            
+            if (score >= 50) {
+                state.progress.listen[ex.id] = true;
+                save();
+                toast('Listening completed! 🎧');
+            }
+        }
+
+        function exitListen() {
+            state.currentListen = null;
+            goto('listening');
+        }
+
+        // Speaking
+        function renderSpeakList() {
+            const html = SPEAKING.map(s => {
+                const done = state.progress.speak[s.id];
+                return `
+                    <div class="exercise-item ${done?'completed':''}" onclick="startSpeak(${s.id})">
+                        <div class="exercise-num">${done?'✓':s.id}</div>
+                        <div>
+                            <h4>${s.title}</h4>
+                            <p style="font-size: 13px; color: #666;">${s.subtitle}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('speakList').innerHTML = html;
+        }
+
+        function startSpeak(id) {
+            const ex = SPEAKING.find(s => s.id === id);
+            state.currentSpeak = ex;
+            
+            document.getElementById('speakTitle').textContent = ex.title;
+            document.getElementById('speakSubtitle').textContent = ex.subtitle;
+            document.getElementById('speakPrompt').textContent = ex.prompt;
+            document.getElementById('speechResult').classList.add('hidden');
+            document.getElementById('modelSection').classList.add('hidden');
+            document.getElementById('micLabel').textContent = 'Tap to Record';
+            document.getElementById('micBtn').classList.remove('recording');
+            
+            goto('speak-active');
+        }
+
+        let recording = false;
+        function toggleRecord() {
+            const btn = document.getElementById('micBtn');
+            const label = document.getElementById('micLabel');
+            
+            if (recording) {
+                recording = false;
+                btn.classList.remove('recording');
+                label.textContent = 'Tap to Record Again';
+                
+                // Simulate speech recognition
+                setTimeout(() => {
+                    const result = document.getElementById('speechResult');
+                    result.classList.remove('hidden');
+                    document.getElementById('speechText').textContent = 
+                        '(Your speech would be transcribed here)';
+                }, 500);
+            } else {
+                recording = true;
+                btn.classList.add('recording');
+                label.textContent = 'Recording...';
+                
+                // Auto-stop after 5 seconds
+                setTimeout(() => {
+                    if (recording) toggleRecord();
+                }, 5000);
+            }
+        }
+
+        function showModel() {
+            const ex = state.currentSpeak;
+            document.getElementById('modelSection').classList.remove('hidden');
+            document.getElementById('modelJP').textContent = ex.modelJP;
+            document.getElementById('modelEN').textContent = ex.modelEN;
+            speak(ex.modelJP);
+        }
+
+        function completeSpeak() {
+            state.progress.speak[state.currentSpeak.id] = true;
+            save();
+            toast('Speaking completed! 🎤');
+            exitSpeak();
+        }
+
+        function exitSpeak() {
+            recording = false;
+            state.currentSpeak = null;
+            goto('speaking');
+        }
+
+        // Text-to-Speech
+        function speak(text) {
+            if (!window.speechSynthesis) return;
+            window.speechSynthesis.cancel(); // Cancel any ongoing speech to avoid queued delays
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ja-JP';
+            utterance.rate = 0.8;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Toast
+        let toastTimeout;
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.display = 'block';
+            
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+            }
+            toastTimeout = setTimeout(() => t.style.display = 'none', 3000);
+        }
+    </script>
+</body>
+</html>
